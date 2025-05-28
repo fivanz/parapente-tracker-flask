@@ -15,23 +15,25 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      width: 100%;
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
     }
 
     .container {
       display: flex;
       height: 100vh;
       width: 100vw;
+      overflow: hidden;
     }
 
     #map {
-      width: 45%;
+      flex: 0 0 45%;
       height: 100%;
+      z-index: 0;
     }
 
     .sidebar {
-      width: 55%;
+      flex: 1;
       height: 100%;
       padding: 1rem;
       box-sizing: border-box;
@@ -65,8 +67,8 @@
       border-radius: 8px;
       color: #fff;
       font-weight: bold;
-      display: inline-block;
       font-size: 1rem;
+      display: inline-block;
     }
 
     .cola {
@@ -105,41 +107,45 @@
     const markers = {};
 
     async function fetchData() {
-      const res = await fetch('/data');
-      const data = await res.json();
+      try {
+        const res = await fetch('/data');
+        const data = await res.json();
 
-      // Actualizar parapentistas
-      const container = document.getElementById('parapentistas');
-      container.innerHTML = '';
+        // Actualizar parapentistas
+        const container = document.getElementById('parapentistas');
+        container.innerHTML = '';
 
-      Object.entries(data.parapentistas || {}).forEach(([id, p]) => {
-        const { lat, lng, nombre = id, numero = '?', color = '#666' } = p;
+        Object.entries(data.parapentistas || {}).forEach(([id, p]) => {
+          const { lat, lng, nombre = id, numero = '?', color = '#666' } = p;
 
-        // Actualizar o crear marcador
-        if (!markers[id]) {
-          const marker = L.circleMarker([lat, lng], {
-            radius: 10,
-            color,
-            fillColor: color,
-            fillOpacity: 0.8
-          }).bindPopup(`${numero}. ${nombre}`);
-          marker.addTo(map);
-          markers[id] = marker;
-        } else {
-          markers[id].setLatLng([lat, lng]);
-        }
+          // Actualizar o crear marcador
+          if (!markers[id]) {
+            const marker = L.circleMarker([lat, lng], {
+              radius: 10,
+              color,
+              fillColor: color,
+              fillOpacity: 0.8
+            }).bindPopup(`${numero}. ${nombre}`);
+            marker.addTo(map);
+            markers[id] = marker;
+          } else {
+            markers[id].setLatLng([lat, lng]);
+          }
 
-        // Añadir a la lista visual
-        const tag = document.createElement('div');
-        tag.className = 'tag';
-        tag.style.backgroundColor = color;
-        tag.textContent = `${numero}. ${nombre}`;
-        container.appendChild(tag);
-      });
+          // Añadir a la lista visual
+          const tag = document.createElement('div');
+          tag.className = 'tag';
+          tag.style.backgroundColor = color;
+          tag.textContent = `${numero}. ${nombre}`;
+          container.appendChild(tag);
+        });
 
-      // Actualizar cola
-      const colaEl = document.getElementById('cola');
-      colaEl.innerHTML = data.cola?.map(n => `• ${n}`).join('<br>') || 'Sin información';
+        // Actualizar cola
+        const colaEl = document.getElementById('cola');
+        colaEl.innerHTML = data.cola?.map(n => `• ${n}`).join('<br>') || 'Sin información';
+      } catch (err) {
+        console.error('Error al cargar datos:', err);
+      }
     }
 
     setInterval(fetchData, 3000);
