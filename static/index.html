@@ -29,7 +29,6 @@
     #map {
       flex: 0 0 45%;
       height: 100%;
-      z-index: 0;
     }
 
     .sidebar {
@@ -38,41 +37,32 @@
       padding: 1rem;
       box-sizing: border-box;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background-color: #fff;
+      background-color: #f9f9f9;
       border-left: 2px solid #ddd;
     }
 
     .section {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       margin-bottom: 0.5rem;
       border-bottom: 1px solid #ccc;
       padding-bottom: 0.3rem;
     }
 
-    .listado {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
     .tag {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      color: #fff;
+      padding: 0.4rem 0.8rem;
+      border-radius: 5px;
       font-weight: bold;
-      font-size: 1rem;
+      margin-bottom: 0.4rem;
       display: inline-block;
+      color: white;
     }
 
     .cola {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       padding-left: 1rem;
     }
   </style>
@@ -83,7 +73,7 @@
     <div class="sidebar">
       <div class="section">
         <h2>Parapentistas en vuelo</h2>
-        <div class="listado" id="parapentistas"></div>
+        <div id="parapentistas"></div>
       </div>
       <div class="section">
         <h2>Próximos vuelos</h2>
@@ -105,42 +95,49 @@
     }).addTo(map);
 
     const markers = {};
+    const colores = [
+      '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+      '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+      '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
+      '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080'
+    ];
 
     async function fetchData() {
       try {
         const res = await fetch('/data');
         const data = await res.json();
 
-        // Actualizar parapentistas
         const container = document.getElementById('parapentistas');
         container.innerHTML = '';
 
+        let index = 0;
         Object.entries(data.parapentistas || {}).forEach(([id, p]) => {
-          const { lat, lng, nombre = id, numero = '?', color = '#666' } = p;
+          const { lat, lng, nombre = id } = p;
+          const color = colores[index % colores.length];
 
-          // Actualizar o crear marcador
           if (!markers[id]) {
             const marker = L.circleMarker([lat, lng], {
               radius: 10,
               color,
               fillColor: color,
               fillOpacity: 0.8
-            }).bindPopup(`${numero}. ${nombre}`);
+            }).bindPopup(nombre);
             marker.addTo(map);
             markers[id] = marker;
           } else {
             markers[id].setLatLng([lat, lng]);
           }
 
-          // Añadir a la lista visual
+          // Mostrar en lista
           const tag = document.createElement('div');
           tag.className = 'tag';
           tag.style.backgroundColor = color;
-          tag.textContent = `${numero}. ${nombre}`;
+          tag.textContent = nombre;
           container.appendChild(tag);
+
+          index++;
         });
 
-        // Actualizar cola
         const colaEl = document.getElementById('cola');
         colaEl.innerHTML = data.cola?.map(n => `• ${n}`).join('<br>') || 'Sin información';
       } catch (err) {
