@@ -1,4 +1,3 @@
-```python
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
@@ -76,4 +75,4 @@ def update_nombre():
 if __name__ == '__main__':
     init_store()
     app.run(host='0.0.0.0', port=8000)
-```
+
