@@ -1,49 +1,17 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-import json
-import os
-from datetime import datetime
-from waitress import serve
+# ... (importaciones y configuración inicial)
 
-app = Flask(__name__, static_folder='static')
-CORS(app)
+COLORS = [
+    "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
+    "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe",
+    "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000",
+    "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080"
+]
 
-STORE_PATH = 'data/store.json'
-
-# Inicializar archivo de almacenamiento si no existe
-def init_store():
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    if not os.path.isfile(STORE_PATH):
-        with open(STORE_PATH, 'w') as f:
-            json.dump({"parapentistas": {}, "cola": []}, f)
-
-# Leer estado actual de forma segura
-def load_data():
-    try:
-        with open(STORE_PATH, 'r') as f:
-            content = f.read().strip()
-            if not content:
-                raise ValueError("Archivo JSON vacío")
-            return json.loads(content)
-    except (json.JSONDecodeError, ValueError):
-        # Restaurar archivo corrupto o vacío
-        data = {"parapentistas": {}, "cola": []}
-        save_data(data)
-        return data
-
-# Guardar estado actualizado
-def save_data(data):
-    with open(STORE_PATH, 'w') as f:
-        json.dump(data, f)
-
-@app.route('/')
-def index():
-    return send_from_directory('static', 'index.html')
-
-@app.route('/data', methods=['GET'])
-def get_data():
-    return jsonify(load_data())
+def assign_color_and_index(data, pid):
+    existing = list(data["parapentistas"].keys())
+    index = existing.index(pid) if pid in existing else len(existing)
+    color = COLORS[index % len(COLORS)]
+    return index + 1, color
 
 @app.route('/webhook/location', methods=['POST'])
 def update_location():
@@ -53,35 +21,20 @@ def update_location():
     if not pid:
         return {"error": "ID requerido"}, 400
 
-    data["parapentistas"][pid] = {
+    numero, color = assign_color_and_index(data, pid)
+
+    if pid not in data["parapentistas"]:
+        data["parapentistas"][pid] = {}
+
+    data["parapentistas"][pid].update({
         "lat": payload.get("lat"),
         "lng": payload.get("lng"),
         "alt": payload.get("alt"),
         "accuracy": payload.get("accuracy"),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    save_data(data)
-    return {"status": "ok"}
-
-@app.route('/webhook/nombre', methods=['POST'])
-def update_nombre():
-    payload = request.json
-    data = load_data()
-    pid = payload.get("id")
-    nombre = payload.get("nombre")
-    cola = payload.get("siguientes", [])
-
-    if pid and nombre:
-        if pid not in data["parapentistas"]:
-            data["parapentistas"][pid] = {}
-        data["parapentistas"][pid]["nombre"] = nombre
-
-    if cola:
-        data["cola"] = cola
+        "timestamp": datetime.utcnow().isoformat(),
+        "numero": numero,
+        "color": color
+    })
 
     save_data(data)
     return {"status": "ok"}
-
-if __name__ == '__main__':
-    init_store()
-    serve(app, host='0.0.0.0', port=8000)
