@@ -4,6 +4,8 @@ import json
 import os
 from datetime import datetime
 
+from waitress import serve
+
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -74,5 +76,4 @@ def update_nombre():
 
 if __name__ == '__main__':
     init_store()
-    app.run(host='0.0.0.0', port=8000)
-
+    serve(app, host='0.0.0.0', port=8000)
