@@ -1,101 +1,74 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from datetime import datetime
-import os
 import json
+import os
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
 DATA_FILE = 'data.json'
 
-# Colores únicos por parapentista
-COLORS = [
-    "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
-    "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe",
-    "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000",
-    "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080"
-]
-
+# Función para cargar datos desde archivo JSON
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {"parapentistas": {}, "cola": []}
-    try:
+    if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r') as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return {"parapentistas": {}, "cola": []}
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {"parapentistas": {}, "cola": []}
+    return {"parapentistas": {}, "cola": []}
 
+# Función para guardar datos en archivo JSON
 def save_data(data):
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
-def assign_color_and_index(data, pid):
-    existing = list(data["parapentistas"].keys())
-    if pid in existing:
-        index = existing.index(pid)
-    else:
-        index = len(existing)
-    color = COLORS[index % len(COLORS)]
-    return index + 1, color
-
-@app.route('/webhook/location', methods=['POST'])
-def update_location():
-    payload = request.json
-    if not payload or "id" not in payload:
-        return {"error": "Falta 'id' en el payload"}, 400
+# Ruta para recibir datos desde los dispositivos GPS (webhook)
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    content = request.json
+    required_keys = ['id', 'lat', 'lng']
+    
+    if not content or not all(k in content for k in required_keys):
+        return jsonify({'error': 'Datos incompletos'}), 400
 
     data = load_data()
-    pid = payload["id"]
-
-    numero, color = assign_color_and_index(data, pid)
-
-    if pid not in data["parapentistas"]:
-        data["parapentistas"][pid] = {}
-
-    data["parapentistas"][pid].update({
-        "lat": payload.get("lat"),
-        "lng": payload.get("lng"),
-        "alt": payload.get("alt"),
-        "accuracy": payload.get("accuracy"),
-        "timestamp": datetime.utcnow().isoformat(),
-        "numero": numero,
-        "color": color
-    })
+    p_id = str(content['id'])
+    data['parapentistas'][p_id] = {
+        'lat': content['lat'],
+        'lng': content['lng'],
+        'nombre': content.get('nombre', p_id)
+    }
 
     save_data(data)
-    return {"status": "ok"}
+    return jsonify({'status': 'ok'})
 
-@app.route('/webhook/nombre', methods=['POST'])
-def update_nombre():
-    payload = request.json
-    if not payload or "id" not in payload or "nombre" not in payload:
-        return {"error": "Falta 'id' o 'nombre'"}, 400
+# Ruta para actualizar la cola manualmente (opcional)
+@app.route('/cola', methods=['POST'])
+def actualizar_cola():
+    content = request.json
+    if not content or 'cola' not in content or not isinstance(content['cola'], list):
+        return jsonify({'error': 'Formato incorrecto'}), 400
 
     data = load_data()
-    pid = payload["id"]
-
-    if pid not in data["parapentistas"]:
-        data["parapentistas"][pid] = {}
-
-    data["parapentistas"][pid]["nombre"] = payload["nombre"]
-
-    if "siguientes" in payload:
-        data["cola"] = payload["siguientes"]
-
+    data['cola'] = content['cola']
     save_data(data)
-    return {"status": "ok"}
+    return jsonify({'status': 'cola actualizada'})
 
-@app.route('/data')
+# Ruta para servir los datos al frontend
+@app.route('/data', methods=['GET'])
 def get_data():
-    try:
-        return jsonify(load_data())
-    except Exception as e:
-        return {"error": f"Error al cargar los datos: {str(e)}"}, 500
+    return jsonify(load_data())
 
+# Ruta para servir el archivo HTML
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
+
+# Ruta para servir otros archivos estáticos (JS, CSS, etc.)
+@app.route('/<path:path>')
+def static_files(path):
+    return send_from_directory(app.static_folder, path)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=5000)
