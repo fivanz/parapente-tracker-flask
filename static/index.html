@@ -2,28 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Parapentistas en Vuelo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Parapente Tracker</title>
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet @1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+4L2yyhSzY0Kx0b19KVxJtzM9N+C9y5gsTCzG92o8="
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-o9N1j8Mk0yHtdGAhGgU8MtbC3ja3A8P5G+JvP7u6r7w="
     crossorigin=""
   />
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       font-family: Arial, sans-serif;
-      background-color: #1e1e2f;
-      color: #ffffff;
-      overflow: hidden;
+      background-color: #f4f4f4;
     }
 
     .container {
@@ -33,155 +26,120 @@
     }
 
     #map {
-      width: 40%;
+      width: 45%;
       height: 100%;
     }
 
-    #sidebar {
-      width: 60%;
-      padding: 2rem;
-      background-color: #2c2c3d;
+    .sidebar {
+      width: 55%;
+      height: 100%;
+      padding: 1rem;
+      box-sizing: border-box;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      justify-content: space-between;
+      background-color: #fff;
+      border-left: 2px solid #ddd;
     }
 
-    h2,
-    h3 {
-      font-size: 2rem;
-      color: #00bfff;
+    .section {
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
       margin-bottom: 0.5rem;
-      border-bottom: 2px solid #444;
+      border-bottom: 1px solid #ccc;
       padding-bottom: 0.3rem;
     }
 
-    .item {
-      padding: 1rem;
-      border-left: 6px solid;
-      background-color: rgba(255, 255, 255, 0.05);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      font-size: 1.3rem;
-      transition: background-color 0.3s ease;
+    .listado {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
-    .item:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .item .numero {
+    .tag {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      color: #fff;
       font-weight: bold;
-      font-size: 1.5rem;
-      color: #00bfff;
+      display: inline-block;
+      font-size: 1rem;
     }
 
-    .siguientes ul {
-      list-style: none;
-      padding-left: 0;
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-
-    .siguientes li {
-      padding: 1rem;
-      background-color: rgba(0, 255, 170, 0.1);
-      border-left: 4px solid #00ffaa;
+    .cola {
       font-size: 1.2rem;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
-      #map {
-        width: 100%;
-        height: 50%;
-      }
-      #sidebar {
-        width: 100%;
-        padding: 1rem;
-        gap: 1rem;
-      }
-      h2,
-      h3 {
-        font-size: 1.5rem;
-      }
-      .item,
-      .siguientes li {
-        font-size: 1rem;
-      }
+      padding-left: 1rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="map"></div>
-    <div id="sidebar">
-      <h2>En Vuelo</h2>
-      <div id="parapentistas"></div>
-      <div class="siguientes">
-        <h3>Siguientes</h3>
-        <ul id="cola"></ul>
+    <div class="sidebar">
+      <div class="section">
+        <h2>Parapentistas en vuelo</h2>
+        <div class="listado" id="parapentistas"></div>
+      </div>
+      <div class="section">
+        <h2>Próximos vuelos</h2>
+        <div class="cola" id="cola"></div>
       </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet @1.9.4/dist/leaflet.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j8Mk0yHtdGAhGgU8MtbC3ja3A8P5G+JvP7u6r7w="
+    crossorigin=""
+  ></script>
   <script>
-    const map = L.map('map').setView([4.79998, -74.40579], 15);
+    const map = L.map('map').setView([4.801, -74.405], 14);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     const markers = {};
 
     async function fetchData() {
-      try {
-        const res = await fetch('/data');
-        const data = await res.json();
-        const parapentistas = data.parapentistas || {};
-        const cola = data.cola || [];
+      const res = await fetch('/data');
+      const data = await res.json();
 
-        const sidebar = document.getElementById('parapentistas');
-        sidebar.innerHTML = '';
+      // Actualizar parapentistas
+      const container = document.getElementById('parapentistas');
+      container.innerHTML = '';
 
-        for (const [id, info] of Object.entries(parapentistas)) {
-          const { lat, lng, nombre, numero, color } = info;
+      Object.entries(data.parapentistas || {}).forEach(([id, p]) => {
+        const { lat, lng, nombre = id, numero = '?', color = '#666' } = p;
 
-          // Actualizar o crear marcador
-          if (!markers[id]) {
-            const marker = L.circleMarker([lat, lng], {
-              radius: 10,
-              color: color || '#00bfff',
-              fillColor: color || '#00bfff',
-              fillOpacity: 0.8
-            }).addTo(map);
-            marker.bindTooltip(numero.toString(), { permanent: true, direction: 'top' });
-            markers[id] = marker;
-          } else {
-            markers[id].setLatLng([lat, lng]);
-          }
-
-          // Mostrar en panel lateral
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.style.borderColor = color || '#00bfff';
-          div.innerHTML = `<span class="numero">${numero}</span> - ${nombre || id}`;
-          sidebar.appendChild(div);
+        // Actualizar o crear marcador
+        if (!markers[id]) {
+          const marker = L.circleMarker([lat, lng], {
+            radius: 10,
+            color,
+            fillColor: color,
+            fillOpacity: 0.8
+          }).bindPopup(`${numero}. ${nombre}`);
+          marker.addTo(map);
+          markers[id] = marker;
+        } else {
+          markers[id].setLatLng([lat, lng]);
         }
 
-        const colaEl = document.getElementById('cola');
-        colaEl.innerHTML = '';
-        cola.forEach(nombre => {
-          const li = document.createElement('li');
-          li.textContent = nombre;
-          colaEl.appendChild(li);
-        });
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      }
+        // Añadir a la lista visual
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.style.backgroundColor = color;
+        tag.textContent = `${numero}. ${nombre}`;
+        container.appendChild(tag);
+      });
+
+      // Actualizar cola
+      const colaEl = document.getElementById('cola');
+      colaEl.innerHTML = data.cola?.map(n => `• ${n}`).join('<br>') || 'Sin información';
     }
 
     setInterval(fetchData, 3000);
