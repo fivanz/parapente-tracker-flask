@@ -3,7 +3,6 @@ from flask_cors import CORS
 import json
 import os
 from datetime import datetime
-
 from waitress import serve
 
 app = Flask(__name__, static_folder='static')
@@ -19,10 +18,19 @@ def init_store():
         with open(STORE_PATH, 'w') as f:
             json.dump({"parapentistas": {}, "cola": []}, f)
 
-# Leer estado actual
+# Leer estado actual de forma segura
 def load_data():
-    with open(STORE_PATH, 'r') as f:
-        return json.load(f)
+    try:
+        with open(STORE_PATH, 'r') as f:
+            content = f.read().strip()
+            if not content:
+                raise ValueError("Archivo JSON vacío")
+            return json.loads(content)
+    except (json.JSONDecodeError, ValueError):
+        # Restaurar archivo corrupto o vacío
+        data = {"parapentistas": {}, "cola": []}
+        save_data(data)
+        return data
 
 # Guardar estado actualizado
 def save_data(data):
