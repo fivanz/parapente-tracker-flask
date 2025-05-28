@@ -1,0 +1,59 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Parapente Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; display: flex; }
+    #map { width: 50%; height: 100%; }
+    #panel { width: 50%; padding: 10px; background: #f0f0f0; overflow-y: auto; }
+    .parapentista { margin-bottom: 10px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="panel"><h2>Volando</h2><div id="listado"></div><h3>Próximos vuelos</h3><ul id="cola"></ul></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([4.8003, -74.4062], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const markers = {};
+
+    async function actualizar() {
+      const res = await fetch('/data');
+      const data = await res.json();
+      const panel = document.getElementById('listado');
+      const cola = document.getElementById('cola');
+      panel.innerHTML = '';
+      cola.innerHTML = '';
+
+      Object.entries(data.parapentistas).forEach(([id, p], i) => {
+        const num = i + 1;
+        const markerLabel = `${num}`;
+        const nombre = p.nombre || `ID: ${id}`;
+
+        if (markers[id]) {
+          markers[id].setLatLng([p.lat, p.lng]);
+        } else {
+          markers[id] = L.marker([p.lat, p.lng], {
+            title: nombre
+          }).addTo(map).bindPopup(markerLabel);
+        }
+
+        panel.innerHTML += `<div class='parapentista'><strong>#${num}:</strong> ${nombre}</div>`;
+      });
+
+      data.cola.forEach(n => {
+        cola.innerHTML += `<li>${n}</li>`;
+      });
+    }
+
+    setInterval(actualizar, 3000);
+    actualizar();
+  </script>
+</body>
+</html>
+```
