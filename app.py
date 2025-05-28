@@ -2,73 +2,81 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
 import os
+from datetime import datetime
+from waitress import serve
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
-DATA_FILE = 'data.json'
+STORE_PATH = 'data/store.json'
 
-# Función para cargar datos desde archivo JSON
+def init_store():
+    if not os.path.exists('data'):
+        os.makedirs('data')
+    if not os.path.isfile(STORE_PATH):
+        with open(STORE_PATH, 'w') as f:
+            json.dump({"parapentistas": {}, "cola": []}, f)
+
 def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {"parapentistas": {}, "cola": []}
-    return {"parapentistas": {}, "cola": []}
+    try:
+        with open(STORE_PATH, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return {"parapentistas": {}, "cola": []}
 
-# Función para guardar datos en archivo JSON
 def save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    with open(STORE_PATH, 'w') as f:
+        json.dump(data, f)
 
-# Ruta para recibir datos desde los dispositivos GPS (webhook)
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    content = request.json
-    required_keys = ['id', 'lat', 'lng']
-    
-    if not content or not all(k in content for k in required_keys):
-        return jsonify({'error': 'Datos incompletos'}), 400
+@app.route('/')
+def index():
+    return send_from_directory('static', 'index.html')
 
-    data = load_data()
-    p_id = str(content['id'])
-    data['parapentistas'][p_id] = {
-        'lat': content['lat'],
-        'lng': content['lng'],
-        'nombre': content.get('nombre', p_id)
-    }
-
-    save_data(data)
-    return jsonify({'status': 'ok'})
-
-# Ruta para actualizar la cola manualmente (opcional)
-@app.route('/cola', methods=['POST'])
-def actualizar_cola():
-    content = request.json
-    if not content or 'cola' not in content or not isinstance(content['cola'], list):
-        return jsonify({'error': 'Formato incorrecto'}), 400
-
-    data = load_data()
-    data['cola'] = content['cola']
-    save_data(data)
-    return jsonify({'status': 'cola actualizada'})
-
-# Ruta para servir los datos al frontend
 @app.route('/data', methods=['GET'])
 def get_data():
     return jsonify(load_data())
 
-# Ruta para servir el archivo HTML
-@app.route('/')
-def index():
-    return send_from_directory(app.static_folder, 'index.html')
+@app.route('/webhook/location', methods=['POST'])
+def update_location():
+    payload = request.json
+    data = load_data()
+    pid = payload.get("id")
+    if not pid:
+        return {"error": "ID requerido"}, 400
 
-# Ruta para servir otros archivos estáticos (JS, CSS, etc.)
-@app.route('/<path:path>')
-def static_files(path):
-    return send_from_directory(app.static_folder, path)
+    if pid not in data["parapentistas"]:
+        data["parapentistas"][pid] = {}
+
+    data["parapentistas"][pid].update({
+        "lat": payload.get("lat"),
+        "lng": payload.get("lng"),
+        "alt": payload.get("alt"),
+        "accuracy": payload.get("accuracy"),
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+    save_data(data)
+    return {"status": "ok"}
+
+@app.route('/webhook/nombre', methods=['POST'])
+def update_nombre():
+    payload = request.json
+    data = load_data()
+    pid = payload.get("id")
+    nombre = payload.get("nombre")
+    cola = payload.get("siguientes", [])
+
+    if pid and nombre:
+        if pid not in data["parapentistas"]:
+            data["parapentistas"][pid] = {}
+        data["parapentistas"][pid]["nombre"] = nombre
+
+    if cola:
+        data["cola"] = cola
+
+    save_data(data)
+    return {"status": "ok"}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    init_store()
+    serve(app, host='0.0.0.0', port=8000)
