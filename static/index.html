@@ -2,175 +2,134 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Parapentistas en Vuelo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parapente Tracker</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-sA+e2myLsLuRfF3M3Qbk7LrjzF68kP4XkzY4Ck0p4XY="
     crossorigin=""
   />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j8Mk1u0vC7fE5rbFfyGddpmJH7CzJ6JbAMtr+HI="
+    crossorigin=""
+  ></script>
   <style>
     html, body {
-      margin: 0; padding: 0; height: 100%;
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
-    }
-    #container {
-      display: flex;
-      height: 100vh;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
       overflow: hidden;
     }
+    #app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
     #map {
-      flex: 1 1 50%;
-      min-width: 400px;
+      flex: 0 0 50%;
       height: 100%;
     }
-    #info {
-      flex: 1 1 50%;
-      background: white;
-      padding: 20px;
+    #panel {
+      flex: 1;
+      padding: 1rem;
       overflow-y: auto;
-      box-sizing: border-box;
-      color: #222;
+      background: #222;
+      display: flex;
+      flex-direction: column;
     }
     h1 {
-      text-align: center;
-      margin-top: 0;
-      font-size: 2rem;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    #info, #cola {
       margin-bottom: 1rem;
     }
-    .card {
-      border-left: 8px solid gray;
-      padding: 10px;
-      margin-bottom: 12px;
-      background: #fafafa;
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-    }
-    .card .nombre {
-      font-weight: bold;
-      font-size: 1.2rem;
-    }
-    .card .info {
-      margin-top: 6px;
-      font-size: 0.95rem;
-      color: #444;
-      line-height: 1.3;
-    }
-    #cola {
-      margin-top: 2rem;
-      border-top: 1px solid #ccc;
-      padding-top: 1rem;
-    }
-    #cola h2 {
+    .custom-icon {
       text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 0.8rem;
-    }
-    #cola ul {
-      list-style: none;
-      padding-left: 0;
-      font-size: 1rem;
-      color: #333;
-    }
-    #cola ul li {
-      margin-bottom: 6px;
     }
   </style>
 </head>
 <body>
-  <div id="container">
+  <div id="app">
     <div id="map"></div>
-    <div id="info">
-      <h1>Parapentistas en Vuelo</h1>
-      <div id="listado"></div>
-
-      <div id="cola">
-        <h2>Próximos vuelos</h2>
-        <ul id="lista-cola"></ul>
-      </div>
+    <div id="panel">
+      <h1>Parapentes en vuelo</h1>
+      <div id="info"></div>
+      <h2>Próximos vuelos</h2>
+      <div id="cola"></div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    const map = L.map("map").setView([4.909, -73.938], 14);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© OpenStreetMap contributors',
+    const map = L.map('map').setView([4.905, -73.971], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    const colors = [
-      "red", "blue", "green", "orange", "purple", "darkred", "cadetblue", "black"
-    ];
-
     const markers = {};
+    const accuracyCircles = {};
+    const colors = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", "#008080", "#e6beff"];
 
     async function cargarDatos() {
-      try {
-        const res = await fetch("/data");
-        if (!res.ok) throw new Error("No se pudo obtener datos");
+      const res = await fetch("/data");
+      const { parapentistas, cola } = await res.json();
 
-        const { parapentistas, cola } = await res.json();
+      const ids = Object.keys(parapentistas).sort();
+      document.getElementById("info").innerHTML = "";
 
-        // Ordenar los IDs para asignar color consistente
-        const ids = Object.keys(parapentistas).sort();
+      ids.forEach((id, index) => {
+        const p = parapentistas[id];
+        const color = colors[index % colors.length];
+        const latlng = [p.lat, p.lng];
 
-        // Actualizar listado derecho
-        const listadoDiv = document.getElementById("listado");
-        listadoDiv.innerHTML = "";
-
-        ids.forEach((id, index) => {
-          const p = parapentistas[id];
-          const color = colors[index % colors.length];
-
-          // Crear o actualizar marcador
-          const icon = L.divIcon({
-            className: "custom-icon",
-            html: `<div style="width: 18px; height: 18px; border-radius: 50%; background: ${color}; border: 2px solid white;"></div>`,
-            iconSize: [18, 18],
-            iconAnchor: [9, 9],
-          });
-
-          if (markers[id]) {
-            markers[id].setLatLng([p.lat, p.lng]);
-            markers[id].setIcon(icon);
-          } else {
-            markers[id] = L.marker([p.lat, p.lng], { icon }).addTo(map);
-          }
-
-          // Mostrar datos en panel derecho
-          const div = document.createElement("div");
-          div.className = "card";
-          div.style.borderLeftColor = color;
-          div.innerHTML = `
-            <div class="nombre">${p.nombre || "Sin nombre"}</div>
-            <div class="info">
-              ID: ${id}<br />
-              Altitud: ${p.alt ?? "N/A"} m<br />
-              Precisión: ${p.accuracy ?? "N/A"} m
-            </div>
-          `;
-          listadoDiv.appendChild(div);
+        const icon = L.divIcon({
+          className: "custom-icon",
+          html: `<div style="width: 18px; height: 18px; border-radius: 50%; background: ${color}; border: 2px solid white;"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
         });
 
-        // Mostrar próximos vuelos en lista
-        const listaCola = document.getElementById("lista-cola");
-        listaCola.innerHTML = "";
-        if (cola && Array.isArray(cola)) {
-          cola.forEach(item => {
-            const li = document.createElement("li");
-            li.textContent = item;
-            listaCola.appendChild(li);
-          });
+        if (markers[id]) {
+          markers[id].setLatLng(latlng);
+          markers[id].setIcon(icon);
+          accuracyCircles[id].setLatLng(latlng).setRadius(p.accuracy || 0);
+        } else {
+          markers[id] = L.marker(latlng, { icon }).addTo(map);
+          accuracyCircles[id] = L.circle(latlng, {
+            radius: p.accuracy || 0,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.2,
+            weight: 1
+          }).addTo(map);
         }
-      } catch (error) {
-        console.error("Error en cargarDatos:", error);
-      }
+
+        const div = document.createElement("div");
+        div.style.margin = "6px 0";
+        div.innerHTML = `
+          <span style="color:${color}; font-weight:bold">●</span>
+          ${p.nombre || "Sin nombre"} 
+          <small>(alt: ${p.alt || "?"} m, prec: ${p.accuracy || "?"} m)</small>`;
+        document.getElementById("info").appendChild(div);
+      });
+
+      const colaDiv = document.getElementById("cola");
+      colaDiv.innerHTML = "";
+      cola.forEach((n, i) => {
+        const color = colors[i % colors.length];
+        const el = document.createElement("div");
+        el.innerHTML = `<span style="color:${color}; font-weight:bold">●</span> ${n}`;
+        colaDiv.appendChild(el);
+      });
     }
 
+    setInterval(cargarDatos, 3000);
     cargarDatos();
-    setInterval(cargarDatos, 5000);
   </script>
 </body>
 </html>
