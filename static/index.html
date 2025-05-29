@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parapentes en Vuelo - TecnDev</title>
+  <title>Parapentes en Vuelo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -62,10 +62,10 @@
   <div id="main">
     <div id="map"></div>
     <div id="sidebar">
-      <h2>Dashboard - Parapente Paraíso</h2>
+      <h2>Parapentes en vuelo</h2>
       <div id="info"></div>
       <div class="cola">
-        <h3>Vuelos programados</h3>
+        <h3>Próximos vuelos</h3>
         <ul id="cola-list"></ul>
       </div>
     </div>
@@ -110,9 +110,10 @@
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              ID: ${id}: <strong>${p.nombre || 'Sin nombre'}</strong> -
-              Altitud: ${p.alt || 'N/A'} m. -
-              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span> 
+              <strong>${p.nombre || 'Sin nombre'}</strong><br>
+              ID: ${id}<br>
+              Altitud: ${p.alt || 'N/A'} m<br>
+              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span>
             `;
             document.getElementById('info').appendChild(div);
 
