@@ -33,8 +33,13 @@
       background: #ffffff;
     }
 
+    #info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
     .parapente {
-      margin-bottom: 1rem;
       padding: 0.5rem;
       border-left: 10px solid gray;
       background: #f9f9f9;
@@ -73,7 +78,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([4.909, -73.949], 13); // Sopó, Cundinamarca
+    const map = L.map('map').setView([4.909, -73.949], 13); // Sopó, Colombia
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -105,7 +110,7 @@
             const p = parapentistas[id];
             const color = getColor(id);
 
-            // HTML panel derecho
+            // Info panel derecho
             const div = document.createElement('div');
             div.className = 'parapente';
             div.style.borderLeftColor = color;
@@ -118,27 +123,26 @@
             document.getElementById('info').appendChild(div);
 
             // Mapa: marcador
+            const latLng = [p.lat, p.lng];
             if (markers[id]) {
-              markers[id].setLatLng([p.lat, p.lng]);
-              circles[id].setLatLng([p.lat, p.lng]);
+              markers[id].setLatLng(latLng);
+              circles[id].setLatLng(latLng);
               circles[id].setRadius(p.accuracy || 20);
             } else {
-              const marker = L.circleMarker([p.lat, p.lng], {
+              markers[id] = L.circleMarker(latLng, {
                 radius: 8,
                 color,
                 fillColor: color,
                 fillOpacity: 0.9
               }).addTo(map);
-              markers[id] = marker;
 
-              const accuracyCircle = L.circle([p.lat, p.lng], {
+              circles[id] = L.circle(latLng, {
                 radius: p.accuracy || 20,
                 color,
                 fillColor: color,
-                fillOpacity: 0.1,
+                fillOpacity: 0.2,
                 weight: 1
               }).addTo(map);
-              circles[id] = accuracyCircle;
             }
           }
 
