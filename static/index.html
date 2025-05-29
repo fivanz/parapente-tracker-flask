@@ -11,69 +11,91 @@
       padding: 0;
       height: 100%;
       font-family: sans-serif;
-      background: #f2f2f2;
+      background: #f0f0f0;
+      overflow: hidden;
+    }
+
+    #topbar {
+      background: #222;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      font-size: 1.4rem;
     }
 
     #main {
       display: flex;
-      height: 100vh;
-      overflow: hidden;
+      height: calc(100vh - 3.5rem - 2.5rem); /* quitar topbar y bottombar */
+    }
+
+    #map-container {
+      flex: 1;
+      max-width: 50%;
+      position: relative;
     }
 
     #map {
-      width: 45%;
+      width: 100%;
       height: 100%;
     }
 
     #sidebar {
-      width: 55%;
+      flex: 1;
       padding: 1rem;
-      box-sizing: border-box;
-      overflow-y: auto;
       background: #ffffff;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.6rem;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .parapente {
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      border-left: 10px solid gray;
+      padding: 0.4rem;
+      border-left: 6px solid gray;
       background: #f9f9f9;
-      border-radius: 8px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .cola {
-      margin-top: 2rem;
-      background: #eaeaea;
-      padding: 1rem;
-      border-radius: 8px;
+    #bottombar {
+      height: 2.5rem;
+      background: #222;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-size: 1rem;
+      overflow: hidden;
     }
 
-    .cola h3 {
-      margin-top: 0;
+    #cola-scroll {
+      display: flex;
+      gap: 2rem;
+      animation: scroll 20s linear infinite;
+      white-space: nowrap;
     }
 
-    .prec {
-      font-size: 0.9em;
-      color: #555;
+    @keyframes scroll {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
     }
   </style>
 </head>
 <body>
+  <div id="topbar">Parapente Paraíso - Ubicación de los Parapentes</div>
   <div id="main">
-    <div id="map"></div>
-    <div id="sidebar">
-      <h2>Parapentes en vuelo</h2>
-      <div id="info"></div>
-      <div class="cola">
-        <h3>Próximos vuelos</h3>
-        <ul id="cola-list"></ul>
-      </div>
-    </div>
+    <div id="map-container"><div id="map"></div></div>
+    <div id="sidebar" id="info"></div>
   </div>
+  <div id="bottombar"><div id="cola-scroll"></div></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([4.909, -73.949], 13); // Sopó, Cundinamarca
+    const map = L.map('map').setView([4.909, -73.949], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -98,26 +120,23 @@
       fetch('/data')
         .then(res => res.json())
         .then(data => {
-          document.getElementById('info').innerHTML = '';
+          const sidebar = document.getElementById('sidebar');
+          sidebar.innerHTML = '';
           const parapentistas = data.parapentistas || {};
 
           for (const id in parapentistas) {
             const p = parapentistas[id];
             const color = getColor(id);
 
-            // HTML panel derecho
             const div = document.createElement('div');
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              <strong>${p.nombre || 'Sin nombre'}</strong><br>
-              ID: ${id}<br>
-              Altitud: ${p.alt || 'N/A'} m<br>
-              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span>
+              <strong>${p.nombre || 'Sin nombre'}</strong> — ID: ${id}<br>
+              ${p.alt || 'N/A'} m • <span class="prec">${p.accuracy || 'N/A'} m</span>
             `;
-            document.getElementById('info').appendChild(div);
+            sidebar.appendChild(div);
 
-            // Mapa: marcador
             if (markers[id]) {
               markers[id].setLatLng([p.lat, p.lng]);
               circles[id].setLatLng([p.lat, p.lng]);
@@ -142,14 +161,9 @@
             }
           }
 
-          // Actualizar cola
-          const colaList = document.getElementById('cola-list');
-          colaList.innerHTML = '';
-          (data.cola || []).forEach(nombre => {
-            const li = document.createElement('li');
-            li.textContent = nombre;
-            colaList.appendChild(li);
-          });
+          const cola = data.cola || [];
+          const scrollDiv = document.getElementById('cola-scroll');
+          scrollDiv.innerHTML = cola.map(nombre => `<span>${nombre}</span>`).join(' — ');
         });
     }
 
