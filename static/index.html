@@ -10,26 +10,31 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: sans-serif;
-      background: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
       overflow: hidden;
     }
 
     #topbar {
-      background: #222;
-      color: white;
+      background-color: #1e1e1e;
+      color: #ffffff;
       padding: 0.8rem 1.5rem;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      height: 3rem;
     }
 
     #main {
       display: flex;
-      height: calc(100vh - 3.5rem - 2.5rem); /* quitar topbar y bottombar */
+      height: calc(100vh - 3rem - 3rem); /* restar topbar y bottombar */
     }
 
     #map-container {
       flex: 1;
       max-width: 50%;
+      background: #ddd;
       position: relative;
     }
 
@@ -40,57 +45,64 @@
 
     #sidebar {
       flex: 1;
-      padding: 1rem;
+      padding: 0.5rem 0.8rem;
       background: #ffffff;
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 0.6rem;
+      gap: 0.4rem;
       box-sizing: border-box;
       overflow: hidden;
     }
 
     .parapente {
-      padding: 0.4rem;
-      border-left: 6px solid gray;
-      background: #f9f9f9;
+      padding: 0.5rem;
+      border-left: 5px solid #ccc;
+      background: #fdfdfd;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       line-height: 1.2;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     #bottombar {
-      height: 2.5rem;
-      background: #222;
-      color: white;
+      height: 3rem;
+      background: #1e1e1e;
+      color: #fff;
       display: flex;
       align-items: center;
+      overflow: hidden;
       padding: 0 1rem;
       font-size: 1rem;
-      overflow: hidden;
     }
 
     #cola-scroll {
-      display: flex;
-      gap: 2rem;
-      animation: scroll 20s linear infinite;
+      display: inline-block;
       white-space: nowrap;
+      animation: scroll 25s linear infinite;
+    }
+
+    #cola-scroll span {
+      display: inline-block;
+      margin-right: 2rem;
     }
 
     @keyframes scroll {
-      0%   { transform: translateX(100%); }
+      0% { transform: translateX(100%); }
       100% { transform: translateX(-100%); }
     }
   </style>
 </head>
 <body>
   <div id="topbar">Parapente Paraíso - Ubicación de los Parapentes</div>
+
   <div id="main">
     <div id="map-container"><div id="map"></div></div>
-    <div id="sidebar" id="info"></div>
+    <div id="sidebar"></div>
   </div>
+
   <div id="bottombar"><div id="cola-scroll"></div></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -104,9 +116,15 @@
     const colors = {};
     const markers = {};
     const circles = {};
+
     const colorList = [
       'red', 'blue', 'green', 'orange', 'purple', 'brown', 'magenta', 'teal',
-      'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime'
+      'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime',
+      'darkgreen', 'deeppink', 'turquoise', 'sienna', 'cadetblue',
+      'indigo', 'olive', 'slateblue', 'tomato', 'chocolate', 'crimson',
+      'cyan', 'darkcyan', 'darkblue', 'peru', 'plum', 'steelblue',
+      'khaki', 'rosybrown', 'orchid', 'mediumvioletred', 'salmon',
+      'seagreen', 'lavender', 'mediumslateblue'
     ];
 
     function getColor(id) {
@@ -122,8 +140,8 @@
         .then(data => {
           const sidebar = document.getElementById('sidebar');
           sidebar.innerHTML = '';
-          const parapentistas = data.parapentistas || {};
 
+          const parapentistas = data.parapentistas || {};
           for (const id in parapentistas) {
             const p = parapentistas[id];
             const color = getColor(id);
@@ -132,8 +150,8 @@
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              <strong>${p.nombre || 'Sin nombre'}</strong> — ID: ${id}<br>
-              ${p.alt || 'N/A'} m • <span class="prec">${p.accuracy || 'N/A'} m</span>
+              <strong>${p.nombre || 'Sin nombre'}</strong><br>
+              ID: ${id} • ${p.alt || '?'} m • Prec: ${p.accuracy || '?'} m
             `;
             sidebar.appendChild(div);
 
@@ -161,9 +179,10 @@
             }
           }
 
-          const cola = data.cola || [];
+          // Cola de próximos vuelos
           const scrollDiv = document.getElementById('cola-scroll');
-          scrollDiv.innerHTML = cola.map(nombre => `<span>${nombre}</span>`).join(' — ');
+          const cola = data.cola || [];
+          scrollDiv.innerHTML = cola.map(nombre => `<span>${nombre}</span>`).join('');
         });
     }
 
