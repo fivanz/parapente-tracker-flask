@@ -1,82 +1,67 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import json
 import os
-from datetime import datetime
-from waitress import serve
+import json
+import time
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_url_path='', static_folder='static')
 CORS(app)
 
-STORE_PATH = 'data/store.json'
+STORE_FILE = 'store.json'
 
-def init_store():
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    if not os.path.isfile(STORE_PATH):
-        with open(STORE_PATH, 'w') as f:
-            json.dump({"parapentistas": {}, "cola": []}, f)
-
+# Cargar datos desde archivo
 def load_data():
+    if not os.path.exists(STORE_FILE):
+        return {}
     try:
-        with open(STORE_PATH, 'r') as f:
+        with open(STORE_FILE, 'r') as f:
             return json.load(f)
     except json.JSONDecodeError:
-        return {"parapentistas": {}, "cola": []}
+        return {}
 
+# Guardar datos
 def save_data(data):
-    with open(STORE_PATH, 'w') as f:
+    with open(STORE_FILE, 'w') as f:
         json.dump(data, f)
 
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
 
-@app.route('/data', methods=['GET'])
-def get_data():
-    return jsonify(load_data())
-
 @app.route('/webhook/location', methods=['POST'])
-def update_location():
-    payload = request.json
+def webhook():
+    incoming = request.get_json(force=True)
+    if not incoming:
+        return 'No data received', 400
+
     data = load_data()
-    pid = payload.get("id")
-    if not pid:
-        return {"error": "ID requerido"}, 400
+    now = time.time()
 
-    if pid not in data["parapentistas"]:
-        data["parapentistas"][pid] = {}
+    point = {
+        'id': str(incoming.get('id', '0')),
+        'lat': incoming.get('lat'),
+        'lon': incoming.get('lon'),
+        'alt': incoming.get('alt'),
+        'acc': incoming.get('acc'),
+        'name': incoming.get('name', 'Sin nombre'),
+        'timestamp': now
+    }
 
-    data["parapentistas"][pid].update({
-        "lat": payload.get("lat"),
-        "lng": payload.get("lng"),
-        "alt": payload.get("alt"),
-        "accuracy": payload.get("accuracy"),
-        "timestamp": datetime.utcnow().isoformat()
-    })
-
+    data[point['id']] = point
     save_data(data)
-    return {"status": "ok"}
+    return 'OK', 200
 
-@app.route('/webhook/nombre', methods=['POST'])
-def update_nombre():
-    payload = request.json
+@app.route('/data')
+def get_data():
     data = load_data()
-    pid = payload.get("id")
-    nombre = payload.get("nombre")
-    cola = payload.get("siguientes", [])
+    now = time.time()
+    active = {}
 
-    if pid and nombre:
-        if pid not in data["parapentistas"]:
-            data["parapentistas"][pid] = {}
-        data["parapentistas"][pid]["nombre"] = nombre
+    for k, v in data.items():
+        if now - v.get('timestamp', 0) < 5 * 60:
+            active[k] = v
 
-    if cola:
-        data["cola"] = cola
-
-    save_data(data)
-    return {"status": "ok"}
+    return jsonify(active)
 
 if __name__ == '__main__':
-    init_store()
-    serve(app, host='0.0.0.0', port=8000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
