@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Parapente Tracker</title>
 
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
@@ -17,57 +20,66 @@
     html, body {
       height: 100%;
       margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background-color: #f9f9f9;
       color: #222;
-    }
-    #main {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
+      font-family: Arial, sans-serif;
     }
     #map {
-      flex: 0 0 50%;
       height: 100vh;
-      min-width: 320px;
-      background: #eee;
+      width: 100%;
+      min-height: 600px;
     }
     #panel {
-      flex: 1 1 50%;
-      padding: 20px 25px;
       height: 100vh;
       overflow-y: auto;
+      padding: 1rem;
       background: #fff;
-      /* En lugar de column-count, usamos grid para mejor control */
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px 40px;
-      box-sizing: border-box;
       font-size: 1.2rem;
     }
     .marker-info {
-      padding-bottom: 10px;
       border-bottom: 1px solid #ddd;
-      break-inside: avoid;
-      /* para mejor legibilidad */
-      word-break: break-word;
+      padding-bottom: 0.8rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      user-select: none;
     }
     .marker-color {
+      font-size: 1.6rem;
       font-weight: bold;
-      font-size: 1.5rem;
-      margin-right: 8px;
-      vertical-align: middle;
       user-select: none;
+    }
+    /* Para que el texto no se corte */
+    .marker-text {
+      flex-grow: 1;
+      word-break: break-word;
+    }
+    /* Scrollbar un poco personalizado */
+    #panel::-webkit-scrollbar {
+      width: 10px;
+    }
+    #panel::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    #panel::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 5px;
+    }
+    #panel::-webkit-scrollbar-thumb:hover {
+      background: #555;
     }
   </style>
 </head>
 <body>
-  <div id="main">
-    <div id="map"></div>
-    <div id="panel">
-      <!-- Aquí se insertarán los parapentistas dinámicamente -->
+  <div class="container-fluid h-100">
+    <div class="row h-100 gx-0">
+      <div class="col-md-6">
+        <div id="map"></div>
+      </div>
+      <div class="col-md-6" id="panel">
+        <!-- Info dinámica -->
+      </div>
     </div>
   </div>
 
@@ -78,8 +90,10 @@
     crossorigin=""
   ></script>
 
+  <!-- Bootstrap Bundle JS (Popper + Bootstrap) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-    // Mapa centrado en Sopó, Cundinamarca
     const map = L.map('map').setView([4.905, -73.941], 14);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -134,14 +148,17 @@
           const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
           const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
 
+          // Contenedor del panel info
           const div = document.createElement('div');
           div.className = 'marker-info';
 
           div.innerHTML = `
             <span class="marker-color" style="color:${color}">●</span>
-            <strong>${nombre}</strong><br/>
-            Altitud: ${alt}<br/>
-            Precisión: ${prec}
+            <div class="marker-text">
+              <strong>${nombre}</strong><br/>
+              Altitud: ${alt}<br/>
+              Precisión: ${prec}
+            </div>
           `;
 
           panel.appendChild(div);
@@ -154,7 +171,7 @@
     function createColoredIcon(color) {
       return L.divIcon({
         className: '',
-        html: `<svg width="20" height="20" viewBox="0 0 20 20" 
+        html: `<svg width="20" height="20" viewBox="0 0 20 20"
           xmlns="http://www.w3.org/2000/svg">
           <circle cx="10" cy="10" r="8" fill="${color}" stroke="black" stroke-width="1"/>
           </svg>`,
