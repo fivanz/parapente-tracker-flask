@@ -1,4 +1,3 @@
-# Estructura general de la aplicación en Flask para rastreo de parapentistas
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
@@ -11,7 +10,6 @@ CORS(app)
 
 STORE_PATH = 'data/store.json'
 
-# Inicializar archivo de almacenamiento si no existe
 def init_store():
     if not os.path.exists('data'):
         os.makedirs('data')
@@ -19,12 +17,10 @@ def init_store():
         with open(STORE_PATH, 'w') as f:
             json.dump({"parapentistas": {}, "cola": []}, f)
 
-# Leer estado actual
 def load_data():
     with open(STORE_PATH, 'r') as f:
         return json.load(f)
 
-# Guardar estado actualizado
 def save_data(data):
     with open(STORE_PATH, 'w') as f:
         json.dump(data, f)
