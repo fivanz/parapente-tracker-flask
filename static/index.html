@@ -16,9 +16,9 @@
     }
 
     #topbar {
-      background-color: #2e7d32; /* verde sostenibilidad */
-      color: #d4af37; /* dorado */
-      padding: 0.8rem 1.5rem;
+      background-color: #2e7d32; /* Verde sostenibilidad */
+      color: #d4af37; /* Dorado */
+      padding: 0.5rem 1rem;
       font-size: 1.3rem;
       font-weight: bold;
       display: flex;
@@ -28,7 +28,7 @@
 
     #topbar img {
       height: 40px;
-      margin-right: 1rem;
+      margin-right: 12px;
     }
 
     #main {
@@ -73,7 +73,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      min-height: 45px;
+      min-height: 55px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
 
@@ -150,7 +150,7 @@
     <div id="sidebar">
       <!-- Parapentistas serán insertados aquí -->
       <div id="proximos">
-        <strong>Próximos vuelos</strong> Por favor acercarse a la zona de preparación.
+        <strong>Próximos vuelos</strong> (Por favor prepararse)
         <div id="proximos-lista"></div>
       </div>
     </div>
@@ -168,7 +168,7 @@
     const markers = {};
     const circles = {};
 
-    const colorList = [
+    const colorList = [ /* lista de colores */ 
       'red', 'blue', 'green', 'orange', 'purple', 'brown', 'magenta', 'teal',
       'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime',
       'darkgreen', 'deeppink', 'turquoise', 'sienna', 'cadetblue',
@@ -183,6 +183,13 @@
         colors[id] = colorList[Object.keys(colors).length % colorList.length];
       }
       return colors[id];
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '?';
+      const date = new Date(iso);
+      const pad = n => n.toString().padStart(2, '0');
+      return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     function updateData() {
@@ -207,6 +214,7 @@
               <div class="nombre"><img src="static/icons/user.png" alt="">${p.nombre || 'Sin nombre'}</div>
               <div class="dato"><img src="static/icons/id.png" alt="">${id}</div>
               <div class="dato"><img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp; <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m</div>
+              <div class="dato"><img src="static/icons/time.png" alt="">${formatDateTime(p.timestamp)}</div>
             `;
             sidebar.appendChild(div);
 
