@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Parapentes en Vuelo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-Ho/fWz9D1Oc5b/fGmAbjPLxW0Zh9LbKj5ZrSml2xZ4M3D4xyLZQgJXgxwJvBv5a7Ip8ENcBXogG7aF6pYAwlVw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     html, body {
       margin: 0;
@@ -17,7 +16,7 @@
     }
 
     #topbar {
-      background-color: #111;
+      background-color: #d4af37;
       color: #fff;
       padding: 0.8rem 1.5rem;
       font-size: 1.3rem;
@@ -62,7 +61,7 @@
       background: #2c2c2c;
       border-radius: 6px;
       font-size: 0.8rem;
-      line-height: 1.1;
+      line-height: 1.2;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -73,14 +72,31 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
 
-    .parapente i {
-      margin-right: 4px;
-      color: #ccc;
-    }
-
     .nombre {
       font-weight: 600;
+      font-size: 0.95rem;
       margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+    }
+
+    .dato {
+      display: flex;
+      align-items: center;
+      font-size: 0.78rem;
+      margin-top: 2px;
+    }
+
+    .dato img {
+      width: 18px;
+      height: 18px;
+      margin-right: 5px;
+    }
+
+    .nombre img {
+      width: 20px;
+      height: 20px;
+      margin-right: 6px;
     }
 
     #proximos {
@@ -107,11 +123,14 @@
       border-radius: 5px;
       color: #fff;
       box-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      font-size: 0.82rem;
     }
 
-    .proximo-item i {
+    .proximo-item img {
+      width: 16px;
+      height: 16px;
       margin-right: 4px;
-      color: #00bcd4;
+      vertical-align: middle;
     }
   </style>
 </head>
@@ -177,9 +196,9 @@
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              <div class="nombre"><i class="fas fa-user"></i> ${p.nombre || 'Sin nombre'}</div>
-              <div><i class="fas fa-id-badge"></i> ${id}</div>
-              <div><i class="fas fa-mountain"></i> ${p.alt || '?'} m &nbsp;&nbsp; <i class="fas fa-ruler"></i> ${p.accuracy || '?'} m</div>
+              <div class="nombre"><img src="static/icons/user.png" alt="">${p.nombre || 'Sin nombre'}</div>
+              <div class="dato"><img src="static/icons/id.png" alt="">${id}</div>
+              <div class="dato"><img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp; <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m</div>
             `;
             sidebar.appendChild(div);
 
@@ -208,7 +227,9 @@
           }
 
           const cola = data.cola || [];
-          proximosLista.innerHTML = cola.map(nombre => `<span class="proximo-item"><i class="fas fa-plane"></i> ${nombre}</span>`).join('');
+          proximosLista.innerHTML = cola.map(nombre => `
+            <span class="proximo-item"><img src="static/icons/plane.png" alt="">${nombre}</span>
+          `).join('');
         });
     }
 
