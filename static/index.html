@@ -18,14 +18,15 @@
       height: 100%;
       margin: 0;
       padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #222;
     }
     #main {
       display: flex;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
     }
     #map {
       flex: 0 0 50%;
@@ -35,27 +36,30 @@
     }
     #panel {
       flex: 1 1 50%;
-      padding: 15px 25px;
+      padding: 20px 25px;
       height: 100vh;
       overflow-y: auto;
       background: #fff;
-      column-count: 2;
-      column-gap: 30px;
-      color: #222;
-      font-size: 1.25rem;
+      /* En lugar de column-count, usamos grid para mejor control */
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px 40px;
       box-sizing: border-box;
+      font-size: 1.2rem;
     }
     .marker-info {
-      margin-bottom: 20px;
       padding-bottom: 10px;
       border-bottom: 1px solid #ddd;
       break-inside: avoid;
+      /* para mejor legibilidad */
+      word-break: break-word;
     }
     .marker-color {
       font-weight: bold;
       font-size: 1.5rem;
       margin-right: 8px;
       vertical-align: middle;
+      user-select: none;
     }
   </style>
 </head>
@@ -83,7 +87,6 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Colores para markers, hasta 20 colores definidos
     const colors = [
       '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
       '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
@@ -91,7 +94,6 @@
       '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080'
     ];
 
-    // Mantener referencias a markers y círculos
     const markers = {};
     const circles = {};
 
@@ -103,11 +105,9 @@
         const panel = document.getElementById('panel');
         panel.innerHTML = '';
 
-        // Recorremos parapentistas para mostrar en mapa y panel
         Object.entries(data.parapentistas).forEach(([id, p], index) => {
           const color = colors[index % colors.length];
 
-          // Actualizar o crear marker
           if (markers[id]) {
             markers[id].setLatLng([p.lat, p.lng]);
             markers[id].setIcon(createColoredIcon(color));
@@ -115,7 +115,6 @@
             markers[id] = L.marker([p.lat, p.lng], { icon: createColoredIcon(color) }).addTo(map);
           }
 
-          // Actualizar o crear círculo de precisión
           if (circles[id]) {
             circles[id].setLatLng([p.lat, p.lng]);
             circles[id].setRadius(p.accuracy || 0);
@@ -131,7 +130,6 @@
             }).addTo(map);
           }
 
-          // Panel derecho con info
           const nombre = p.nombre || 'Sin nombre';
           const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
           const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
@@ -153,7 +151,6 @@
       }
     }
 
-    // Crear icono de marcador de color personalizado (círculo simple)
     function createColoredIcon(color) {
       return L.divIcon({
         className: '',
@@ -166,10 +163,8 @@
       });
     }
 
-    // Refrescar datos cada 3 segundos
     setInterval(fetchData, 3000);
 
-    // Inicializar datos y corregir tamaño del mapa
     window.onload = () => {
       fetchData();
       setTimeout(() => {
