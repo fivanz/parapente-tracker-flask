@@ -16,14 +16,14 @@
     }
 
     #topbar {
-      background-color: #2e7d32; /* Verde sostenibilidad */
+      background-color: #006400; /* Verde sostenibilidad */
       color: #d4af37; /* Dorado */
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1.2rem;
       font-size: 1.3rem;
       font-weight: bold;
       display: flex;
       align-items: center;
-      height: 2rem;
+      height: 2.2rem;
     }
 
     #topbar img {
@@ -33,7 +33,7 @@
 
     #main {
       display: flex;
-      height: calc(100vh - 3rem);
+      height: calc(100vh - 3.2rem);
     }
 
     #map-container {
@@ -150,7 +150,7 @@
     <div id="sidebar">
       <!-- Parapentistas serán insertados aquí -->
       <div id="proximos">
-        <strong>Próximos vuelos</strong> (Por favor prepararse)
+        <strong>Próximos vuelos</strong>
         <div id="proximos-lista"></div>
       </div>
     </div>
@@ -168,7 +168,7 @@
     const markers = {};
     const circles = {};
 
-    const colorList = [ /* lista de colores */ 
+    const colorList = [
       'red', 'blue', 'green', 'orange', 'purple', 'brown', 'magenta', 'teal',
       'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime',
       'darkgreen', 'deeppink', 'turquoise', 'sienna', 'cadetblue',
@@ -183,13 +183,6 @@
         colors[id] = colorList[Object.keys(colors).length % colorList.length];
       }
       return colors[id];
-    }
-
-    function formatDateTime(iso) {
-      if (!iso) return '?';
-      const date = new Date(iso);
-      const pad = n => n.toString().padStart(2, '0');
-      return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     function updateData() {
@@ -207,14 +200,26 @@
             const p = parapentistas[id];
             const color = getColor(id);
 
+            const timestamp = p.timestamp ? new Date(p.timestamp) : null;
+            const fechaHora = timestamp
+              ? timestamp.toLocaleString('es-CO', {
+                  day: '2-digit', month: '2-digit', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit', second: '2-digit',
+                  hour12: false
+                })
+              : '?';
+
             const div = document.createElement('div');
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
               <div class="nombre"><img src="static/icons/user.png" alt="">${p.nombre || 'Sin nombre'}</div>
               <div class="dato"><img src="static/icons/id.png" alt="">${id}</div>
-              <div class="dato"><img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp; <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m</div>
-              <div class="dato"><img src="static/icons/time.png" alt="">${formatDateTime(p.timestamp)}</div>
+              <div class="dato">
+                <img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp;
+                <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m
+              </div>
+              <div class="dato"><img src="static/icons/clock.png" alt="">${fechaHora}</div>
             `;
             sidebar.appendChild(div);
 
