@@ -53,5 +53,11 @@ Retorna el estado completo:
 
 ---
 
-Licencia MIT
-```
+static/icons/
+
+Archivo	Tamaño recomendado
+user.png	20x20 px
+id.png	18x18 px
+altitude.png	18x18 px
+accuracy.png	18x18 px
+plane.png	18x18 px
