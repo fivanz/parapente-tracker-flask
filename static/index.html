@@ -100,13 +100,10 @@
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
 
-    // Colores para cada parapentista
     const colors = [
       "red", "blue", "green", "orange", "purple", "darkred", "cadetblue", "black"
     ];
 
-    // Mantenemos el color asignado a cada ID mientras dura la sesión
-    const idToColor = {};
     const markers = {};
 
     async function cargarDatos() {
@@ -116,38 +113,16 @@
 
         const { parapentistas, cola } = await res.json();
 
-        // Limpiar marcadores sin datos actuales
-        Object.keys(markers).forEach(id => {
-          if (!parapentistas[id]) {
-            map.removeLayer(markers[id]);
-            delete markers[id];
-            delete idToColor[id];
-          }
-        });
+        // Ordenar los IDs para asignar color consistente
+        const ids = Object.keys(parapentistas).sort();
 
-        let colorIndex = 0;
+        // Actualizar listado derecho
         const listadoDiv = document.getElementById("listado");
         listadoDiv.innerHTML = "";
 
-        // Para mantener colorIndex consistente si llegan nuevos IDs
-        const usedColors = new Set(Object.values(idToColor));
-        function getNextColor() {
-          for (let i = 0; i < colors.length; i++) {
-            if (!usedColors.has(colors[i])) {
-              usedColors.add(colors[i]);
-              return colors[i];
-            }
-          }
-          // Si se usan todos, reinicia colores (puede repetirse)
-          return colors[colorIndex++ % colors.length];
-        }
-
-        for (const [id, p] of Object.entries(parapentistas)) {
-          // Asignar color único si no tiene
-          if (!idToColor[id]) {
-            idToColor[id] = getNextColor();
-          }
-          const color = idToColor[id];
+        ids.forEach((id, index) => {
+          const p = parapentistas[id];
+          const color = colors[index % colors.length];
 
           // Crear o actualizar marcador
           const icon = L.divIcon({
@@ -177,7 +152,7 @@
             </div>
           `;
           listadoDiv.appendChild(div);
-        }
+        });
 
         // Mostrar próximos vuelos en lista
         const listaCola = document.getElementById("lista-cola");
