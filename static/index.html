@@ -1,186 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Parapente Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-    integrity="sha256-sA+4yP1LUZf98dPjUHdQeZgsyWmvxvP0qS2gO0m03h0="
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-o9N1j7kTafZHZj1fDXW5Y49AwcS3BvYU8H0sZl5R9vY="
     crossorigin=""
   />
+
   <style>
     html, body {
+      height: 100%;
       margin: 0;
       padding: 0;
-      height: 100%;
-      font-family: sans-serif;
-      background: #eef2f3;
-      overflow: hidden;
     }
-
     #main {
       display: flex;
       height: 100vh;
       width: 100vw;
-    }
-
-    #map {
-      width: 50%;
-      height: 100vh;
-    }
-
-    #sidebar {
-      width: 50%;
-      padding: 10px 20px;
       overflow: hidden;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
     }
-
-    h2 {
-      margin-top: 0;
-      font-size: 20px;
+    #map {
+      flex: 0 0 50%;
+      height: 100vh;
+      min-width: 320px;
+      background: #eee;
     }
-
-    #info-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .info-box {
-      flex: 1 1 calc(50% - 10px);
-      background: #f5f5f5;
-      border-left: 6px solid #999;
-      padding: 8px;
+    #panel {
+      flex: 1 1 50%;
+      padding: 15px 25px;
+      height: 100vh;
+      overflow-y: auto;
+      background: #fff;
+      column-count: 2;
+      column-gap: 30px;
+      color: #222;
+      font-size: 1.25rem;
       box-sizing: border-box;
-      font-size: 14px;
     }
-
-    ul {
-      padding-left: 20px;
+    .marker-info {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+      break-inside: avoid;
+    }
+    .marker-color {
+      font-weight: bold;
+      font-size: 1.5rem;
+      margin-right: 8px;
+      vertical-align: middle;
     }
   </style>
 </head>
 <body>
   <div id="main">
     <div id="map"></div>
-    <div id="sidebar">
-      <h2>Parapentistas en vuelo</h2>
-      <div id="info-container"></div>
-      <h2 style="margin-top: 20px;">Próximos vuelos</h2>
-      <ul id="cola"></ul>
+    <div id="panel">
+      <!-- Aquí se insertarán los parapentistas dinámicamente -->
     </div>
   </div>
 
+  <!-- Leaflet JS -->
   <script
-    src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-    integrity="sha256-nPLb6G6RyXvToUyhmlsmPazTApZ48Jpihz8gkG0YjZE="
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o0V8TrUL7nr1W1FiFc8u2w9z1Rg4F4V6mXvVtyZdB+o="
     crossorigin=""
   ></script>
+
   <script>
-    let map;
-    const colors = {};
+    // Mapa centrado en Sopó, Cundinamarca
+    const map = L.map('map').setView([4.905, -73.941], 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Colores para markers, hasta 20 colores definidos
+    const colors = [
+      '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+      '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+      '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
+      '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080'
+    ];
+
+    // Mantener referencias a markers y círculos
     const markers = {};
     const circles = {};
 
-    function getColor(id) {
-      if (!colors[id]) {
-        const hue = Object.keys(colors).length * 47 % 360;
-        colors[id] = `hsl(${hue}, 90%, 50%)`;
-      }
-      return colors[id];
-    }
-
-    function initMap() {
-      map = L.map("map").setView([4.905, -73.941], 14); // Sopó
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-      }).addTo(map);
-
-      setTimeout(() => map.invalidateSize(), 200);
-    }
-
-    async function loadData() {
+    async function fetchData() {
       try {
-        const res = await fetch("/data");
-        const json = await res.json();
-        const parapentistas = json.parapentistas || {};
-        const cola = json.cola || [];
+        const res = await fetch('/data');
+        const data = await res.json();
 
-        for (const id in parapentistas) {
-          const p = parapentistas[id];
-          const latlng = [p.lat, p.lng];
-          const color = getColor(id);
+        const panel = document.getElementById('panel');
+        panel.innerHTML = '';
 
-          // Marker
+        // Recorremos parapentistas para mostrar en mapa y panel
+        Object.entries(data.parapentistas).forEach(([id, p], index) => {
+          const color = colors[index % colors.length];
+
+          // Actualizar o crear marker
           if (markers[id]) {
-            markers[id].setLatLng(latlng);
+            markers[id].setLatLng([p.lat, p.lng]);
+            markers[id].setIcon(createColoredIcon(color));
           } else {
-            markers[id] = L.circleMarker(latlng, {
-              radius: 8,
-              fillColor: color,
-              color: "#000",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.9,
-            }).addTo(map);
+            markers[id] = L.marker([p.lat, p.lng], { icon: createColoredIcon(color) }).addTo(map);
           }
 
-          // Circle for accuracy
-          const acc = p.accuracy || 0;
+          // Actualizar o crear círculo de precisión
           if (circles[id]) {
-            circles[id].setLatLng(latlng).setRadius(acc);
+            circles[id].setLatLng([p.lat, p.lng]);
+            circles[id].setRadius(p.accuracy || 0);
+            circles[id].setStyle({ color: color, fillColor: color, fillOpacity: 0.15 });
           } else {
-            circles[id] = L.circle(latlng, {
-              radius: acc,
+            circles[id] = L.circle([p.lat, p.lng], {
+              radius: p.accuracy || 0,
               color: color,
-              fillOpacity: 0.05,
+              fillColor: color,
+              fillOpacity: 0.15,
               weight: 1,
+              interactive: false
             }).addTo(map);
           }
-        }
 
-        // Info panel
-        const infoContainer = document.getElementById("info-container");
-        infoContainer.innerHTML = "";
+          // Panel derecho con info
+          const nombre = p.nombre || 'Sin nombre';
+          const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
+          const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
 
-        for (const id in parapentistas) {
-          const p = parapentistas[id];
-          const color = getColor(id);
+          const div = document.createElement('div');
+          div.className = 'marker-info';
 
-          const div = document.createElement("div");
-          div.className = "info-box";
-          div.style.borderLeftColor = color;
           div.innerHTML = `
-            <strong>${p.nombre || "Sin nombre"}</strong><br>
-            Alt: ${p.alt ?? "–"} m<br>
-            Precisión: ${p.accuracy ?? "–"} m
+            <span class="marker-color" style="color:${color}">●</span>
+            <strong>${nombre}</strong><br/>
+            Altitud: ${alt}<br/>
+            Precisión: ${prec}
           `;
-          infoContainer.appendChild(div);
-        }
 
-        const ul = document.getElementById("cola");
-        ul.innerHTML = "";
-        for (const nombre of cola) {
-          const li = document.createElement("li");
-          li.textContent = nombre;
-          ul.appendChild(li);
-        }
-      } catch (e) {
-        console.error("Error cargando datos", e);
+          panel.appendChild(div);
+        });
+      } catch (error) {
+        console.error('Error al obtener datos:', error);
       }
     }
 
+    // Crear icono de marcador de color personalizado (círculo simple)
+    function createColoredIcon(color) {
+      return L.divIcon({
+        className: '',
+        html: `<svg width="20" height="20" viewBox="0 0 20 20" 
+          xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="8" fill="${color}" stroke="black" stroke-width="1"/>
+          </svg>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+    }
+
+    // Refrescar datos cada 3 segundos
+    setInterval(fetchData, 3000);
+
+    // Inicializar datos y corregir tamaño del mapa
     window.onload = () => {
-      initMap();
-      loadData();
-      setInterval(loadData, 5000);
+      fetchData();
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
     };
   </script>
 </body>
