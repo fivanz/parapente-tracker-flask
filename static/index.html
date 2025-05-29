@@ -3,33 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parapentes en Vuelo - powered by TecnDev</title>
+  <title>Parapentes en Vuelo - Powered by TecnDev</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: sans-serif;
-      background: #1c1c1c;
-      color: #f5f5f5;
-    }
-
-    #main {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      overflow: hidden;
     }
 
     #topbar {
+      background-color: #2e7d32; /* verde sostenibilidad */
+      color: #d4af37; /* dorado */
+      padding: 0.8rem 1.5rem;
+      font-size: 1.3rem;
+      font-weight: bold;
       display: flex;
       align-items: center;
-      background-color: #2e7d32; /* verde naturaleza, sostenible */
-      color: #FFD700; /* dorado */
-      padding: 0.5rem 1rem;
-      font-size: 1.5rem;
-      font-weight: bold;
+      height: 3rem;
     }
 
     #topbar img {
@@ -37,106 +31,134 @@
       margin-right: 1rem;
     }
 
-    #content {
+    #main {
       display: flex;
+      height: calc(100vh - 3rem);
+    }
+
+    #map-container {
       flex: 1;
-      overflow: hidden;
+      max-width: 50%;
+      background: #333;
+      position: relative;
     }
 
     #map {
-      width: 45%;
+      width: 100%;
       height: 100%;
     }
 
     #sidebar {
-      width: 55%;
-      padding: 1rem;
-      box-sizing: border-box;
-      overflow-y: auto;
-      background: #2a2a2a;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .grid {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      background: #222;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 0.5rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem;
+      box-sizing: border-box;
+      color: #fff;
+      overflow: hidden;
     }
 
     .parapente {
-      background: #333;
-      border-left: 8px solid gray;
+      padding: 0.4rem 0.6rem;
+      border-left: 5px solid #ccc;
+      background: #2c2c2c;
       border-radius: 6px;
-      padding: 0.5rem 0.7rem;
-      font-size: 0.85rem;
-      line-height: 1.3;
-    }
-
-    .parapente strong {
-      font-size: 1rem;
-      display: block;
-      margin-bottom: 0.2rem;
-    }
-
-    .info-line {
-      display: flex;
-      justify-content: space-between;
       font-size: 0.8rem;
-      color: #ccc;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 45px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
 
-    .cola {
-      margin-top: 1rem;
-      background: #444;
-      padding: 0.5rem;
-      border-radius: 6px;
+    .nombre {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
     }
 
-    .cola h3 {
-      margin: 0 0 0.5rem 0;
+    .dato {
+      display: flex;
+      align-items: center;
+      font-size: 0.78rem;
+      margin-top: 2px;
+    }
+
+    .dato img {
+      width: 18px;
+      height: 18px;
+      margin-right: 5px;
+    }
+
+    .nombre img {
+      width: 20px;
+      height: 20px;
+      margin-right: 6px;
+    }
+
+    #proximos {
+      grid-column: span 2;
+      background: #333;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      color: #fff;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    #proximos strong {
+      display: block;
+      margin-bottom: 0.5rem;
       font-size: 1rem;
     }
 
-    .cola ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 0.3rem;
+    .proximo-item {
+      display: inline-block;
+      background: #444;
+      padding: 0.3rem 0.6rem;
+      margin: 0.2rem;
+      border-radius: 5px;
+      color: #fff;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      font-size: 0.82rem;
     }
 
-    .cola li {
-      background: #555;
-      border-radius: 4px;
-      padding: 0.4rem;
-      text-align: center;
-      font-size: 0.85rem;
+    .proximo-item img {
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+      vertical-align: middle;
     }
   </style>
 </head>
 <body>
+  <div id="topbar">
+    <img src="static/images/logo.png" alt="Logo" />
+    Parapente Paraíso - Dashboard
+  </div>
+
   <div id="main">
-    <div id="topbar">
-      <img src="static/images/logo.png" alt="Logo">
-      Parapente Paraíso - Dashboard
-    </div>
-    <div id="content">
-      <div id="map"></div>
-      <div id="sidebar">
-        <div class="grid" id="info"></div>
-        <div class="cola">
-          <h3>Próximos vuelos</h3>
-          <ul id="cola-list"></ul>
-        </div>
+    <div id="map-container"><div id="map"></div></div>
+    <div id="sidebar">
+      <!-- Parapentistas serán insertados aquí -->
+      <div id="proximos">
+        <strong>Próximos vuelos</strong>
+        <div id="proximos-lista"></div>
       </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([4.909, -73.949], 13); // Sopó, Cundinamarca
+    const map = L.map('map').setView([4.909, -73.949], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -145,10 +167,15 @@
     const colors = {};
     const markers = {};
     const circles = {};
+
     const colorList = [
       'red', 'blue', 'green', 'orange', 'purple', 'brown', 'magenta', 'teal',
       'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime',
-      'darkgreen', 'cyan', 'darkblue', 'pink', 'tomato', 'slategray', 'indigo'
+      'darkgreen', 'deeppink', 'turquoise', 'sienna', 'cadetblue',
+      'indigo', 'olive', 'slateblue', 'tomato', 'chocolate', 'crimson',
+      'cyan', 'darkcyan', 'darkblue', 'peru', 'plum', 'steelblue',
+      'khaki', 'rosybrown', 'orchid', 'mediumvioletred', 'salmon',
+      'seagreen', 'lavender', 'mediumslateblue'
     ];
 
     function getColor(id) {
@@ -162,28 +189,27 @@
       fetch('/data')
         .then(res => res.json())
         .then(data => {
-          document.getElementById('info').innerHTML = '';
-          const parapentistas = data.parapentistas || {};
+          const sidebar = document.getElementById('sidebar');
+          const proximosBox = document.getElementById('proximos');
+          const proximosLista = document.getElementById('proximos-lista');
+          sidebar.innerHTML = '';
+          sidebar.appendChild(proximosBox);
 
+          const parapentistas = data.parapentistas || {};
           for (const id in parapentistas) {
             const p = parapentistas[id];
             const color = getColor(id);
 
-            // HTML para el panel derecho
             const div = document.createElement('div');
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              <strong><i class="fas fa-user"></i> ${p.nombre || 'Sin nombre'}</strong>
-              <div class="info-line">
-                <span>ID: ${id}</span>
-                <span>${p.alt || 'N/A'} m</span>
-                <span>${p.accuracy || 'N/A'} m</span>
-              </div>
+              <div class="nombre"><img src="static/icons/user.png" alt="">${p.nombre || 'Sin nombre'}</div>
+              <div class="dato"><img src="static/icons/id.png" alt="">${id}</div>
+              <div class="dato"><img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp; <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m</div>
             `;
-            document.getElementById('info').appendChild(div);
+            sidebar.appendChild(div);
 
-            // Mapa: marcador
             if (markers[id]) {
               markers[id].setLatLng([p.lat, p.lng]);
               circles[id].setLatLng([p.lat, p.lng]);
@@ -208,14 +234,10 @@
             }
           }
 
-          // Actualizar cola
-          const colaList = document.getElementById('cola-list');
-          colaList.innerHTML = '';
-          (data.cola || []).forEach(nombre => {
-            const li = document.createElement('li');
-            li.innerHTML = `<i class="fas fa-plane-departure"></i> ${nombre}`;
-            colaList.appendChild(li);
-          });
+          const cola = data.cola || [];
+          proximosLista.innerHTML = cola.map(nombre => `
+            <span class="proximo-item"><img src="static/icons/plane.png" alt="">${nombre}</span>
+          `).join('');
         });
     }
 
