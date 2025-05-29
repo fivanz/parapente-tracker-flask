@@ -7,13 +7,11 @@
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-o88AwQJ5C8GZwI3r3bWx1F2/BbGStN8B9W+nP+QkPCQ="
     crossorigin=""
   />
   <style>
     html, body {
-      margin: 0;
-      height: 100%;
+      margin: 0; padding: 0; height: 100%;
       font-family: Arial, sans-serif;
       background: #f0f0f0;
     }
@@ -24,23 +22,22 @@
     }
     #map {
       flex: 1 1 50%;
-      height: 100%;
       min-width: 400px;
+      height: 100%;
     }
     #info {
       flex: 1 1 50%;
-      height: 100%;
-      overflow-y: auto;
-      background: #fff;
+      background: white;
       padding: 20px;
+      overflow-y: auto;
       box-sizing: border-box;
       color: #222;
     }
     h1 {
+      text-align: center;
       margin-top: 0;
       font-size: 2rem;
       margin-bottom: 1rem;
-      text-align: center;
     }
     .card {
       border-left: 8px solid gray;
@@ -66,10 +63,9 @@
       padding-top: 1rem;
     }
     #cola h2 {
-      margin-top: 0;
+      text-align: center;
       font-size: 1.5rem;
       margin-bottom: 0.8rem;
-      text-align: center;
     }
     #cola ul {
       list-style: none;
@@ -96,13 +92,10 @@
     </div>
   </div>
 
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o8U1N7qphlQjV3+R3KUewrHO4D38E7zUtIChqfyIIt4="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     const map = L.map("map").setView([4.909, -73.938], 14);
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
@@ -116,11 +109,11 @@
     async function cargarDatos() {
       try {
         const res = await fetch("/data");
-        if (!res.ok) throw new Error("Error al obtener datos");
+        if (!res.ok) throw new Error("No se pudo obtener datos");
 
         const { parapentistas, cola } = await res.json();
 
-        // Limpiar marcadores que ya no existen
+        // Quitar marcadores sin datos actuales
         Object.keys(markers).forEach(id => {
           if (!parapentistas[id]) {
             map.removeLayer(markers[id]);
@@ -140,6 +133,7 @@
           }
           const color = idToColor[id];
 
+          // Crear o actualizar marcador
           const icon = L.divIcon({
             className: "custom-icon",
             html: `<div style="width: 18px; height: 18px; border-radius: 50%; background: ${color}; border: 2px solid white;"></div>`,
@@ -154,7 +148,7 @@
             markers[id] = L.marker([p.lat, p.lng], { icon }).addTo(map);
           }
 
-          // Crear tarjeta en listado
+          // Mostrar datos en panel derecho
           const div = document.createElement("div");
           div.className = "card";
           div.style.borderLeftColor = color;
@@ -169,7 +163,7 @@
           listadoDiv.appendChild(div);
         }
 
-        // Actualizar lista de próximos vuelos
+        // Lista próximos vuelos (puede estar vacía)
         const listaCola = document.getElementById("lista-cola");
         listaCola.innerHTML = "";
         if (cola && Array.isArray(cola)) {
@@ -179,8 +173,8 @@
             listaCola.appendChild(li);
           });
         }
-      } catch (e) {
-        console.error("Error al cargar datos:", e);
+      } catch (error) {
+        console.error("Error en cargarDatos:", error);
       }
     }
 
