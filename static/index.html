@@ -2,134 +2,201 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Parapentes en vuelo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parapente Tracker</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+e2myLsLuRfF3M3Qbk7LrjzF68kP4XkzY4Ck0p4XY="
+    integrity="sha256-sA+vx6kG01JcD/JN+Yc/h7OD5tI0yDLuU+2Gj2Z8lik="
     crossorigin=""
   />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1j8Mk1u0vC7fE5rbFfyGddpmJH7CzJ6JbAMtr+HI="
-    crossorigin=""
-  ></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: sans-serif;
-      background: #111;
-      color: #fff;
-      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
     }
-    #app {
+
+    #main {
       display: flex;
+      flex-direction: row;
       height: 100vh;
       width: 100vw;
     }
+
     #map {
-      flex: 0 0 50%;
+      width: 50%;
       height: 100%;
     }
-    #panel {
-      flex: 1;
-      padding: 1rem;
+
+    #info {
+      width: 50%;
+      height: 100%;
       overflow-y: auto;
-      background: #222;
+      padding: 20px;
+      box-sizing: border-box;
+      background-color: #fff;
+      border-left: 2px solid #ddd;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #444;
+    }
+
+    .flyer {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
+
+    .color-box {
+      width: 16px;
+      height: 16px;
+      margin-right: 10px;
+      border-radius: 50%;
     }
-    #info, #cola {
-      margin-bottom: 1rem;
+
+    .label {
+      font-size: 16px;
+      color: #333;
     }
-    .custom-icon {
-      text-align: center;
+
+    .alt-prec {
+      font-size: 12px;
+      color: #666;
+      margin-left: auto;
+    }
+
+    .next-flights {
+      margin-top: 20px;
+    }
+
+    .next-flights li {
+      font-size: 14px;
+      color: #333;
+      padding: 4px 0;
     }
   </style>
 </head>
 <body>
-  <div id="app">
+  <div id="main">
     <div id="map"></div>
-    <div id="panel">
-      <h1>Parapentes en vuelo</h1>
-      <div id="info"></div>
+    <div id="info">
+      <h2>En vuelo</h2>
+      <div id="flyers"></div>
       <h2>Próximos vuelos</h2>
-      <div id="cola"></div>
+      <ul id="next-flights"></ul>
     </div>
   </div>
 
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j7kGStjzF2z1GJTIWH9gQoJeRWn3t+FkD7j/9RM="
+    crossorigin=""
+  ></script>
   <script>
-    const map = L.map('map').setView([4.905, -73.971], 14);
+    const map = L.map('map').setView([4.909, -73.939], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
+    const colors = [
+      "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
+      "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe",
+      "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000",
+      "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080"
+    ];
+
     const markers = {};
-    const accuracyCircles = {};
-    const colors = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", "#008080", "#e6beff"];
+    const circles = {};
 
-    async function cargarDatos() {
-      const res = await fetch("/data");
-      const { parapentistas, cola } = await res.json();
-
-      const ids = Object.keys(parapentistas).sort();
-      document.getElementById("info").innerHTML = "";
-
-      ids.forEach((id, index) => {
-        const p = parapentistas[id];
-        const color = colors[index % colors.length];
-        const latlng = [p.lat, p.lng];
-
-        const icon = L.divIcon({
-          className: "custom-icon",
-          html: `<div style="width: 18px; height: 18px; border-radius: 50%; background: ${color}; border: 2px solid white;"></div>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9]
-        });
-
-        if (markers[id]) {
-          markers[id].setLatLng(latlng);
-          markers[id].setIcon(icon);
-          accuracyCircles[id].setLatLng(latlng).setRadius(p.accuracy || 0);
-        } else {
-          markers[id] = L.marker(latlng, { icon }).addTo(map);
-          accuracyCircles[id] = L.circle(latlng, {
-            radius: p.accuracy || 0,
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.2,
-            weight: 1
-          }).addTo(map);
-        }
-
-        const div = document.createElement("div");
-        div.style.margin = "6px 0";
-        div.innerHTML = `
-          <span style="color:${color}; font-weight:bold">●</span>
-          ${p.nombre || "Sin nombre"} 
-          <small>(alt: ${p.alt || "?"} m, prec: ${p.accuracy || "?"} m)</small>`;
-        document.getElementById("info").appendChild(div);
-      });
-
-      const colaDiv = document.getElementById("cola");
-      colaDiv.innerHTML = "";
-      cola.forEach((n, i) => {
-        const color = colors[i % colors.length];
-        const el = document.createElement("div");
-        el.innerHTML = `<span style="color:${color}; font-weight:bold">●</span> ${n}`;
-        colaDiv.appendChild(el);
-      });
+    function getColor(id) {
+      const hash = [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      return colors[hash % colors.length];
     }
 
-    setInterval(cargarDatos, 3000);
-    cargarDatos();
+    async function fetchData() {
+      try {
+        const res = await fetch("/data");
+        const data = await res.json();
+
+        document.getElementById("flyers").innerHTML = "";
+        const flyers = data.parapentistas || {};
+
+        Object.keys(flyers).forEach((id) => {
+          const flyer = flyers[id];
+          const color = getColor(id);
+          const lat = flyer.lat;
+          const lng = flyer.lng;
+
+          // Crear marcador si no existe
+          if (!markers[id]) {
+            const icon = L.divIcon({
+              className: "custom-icon",
+              html: `<div style="background:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;"></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            });
+            markers[id] = L.marker([lat, lng], { icon }).addTo(map);
+          } else {
+            markers[id].setLatLng([lat, lng]);
+          }
+
+          // Círculo de precisión
+          const accuracy = flyer.accuracy || 0;
+          if (!circles[id]) {
+            circles[id] = L.circle([lat, lng], {
+              radius: accuracy,
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.2,
+              weight: 1,
+            }).addTo(map);
+          } else {
+            circles[id].setLatLng([lat, lng]);
+            circles[id].setRadius(accuracy);
+          }
+
+          // Panel derecho
+          const div = document.createElement("div");
+          div.className = "flyer";
+          const colorDot = document.createElement("div");
+          colorDot.className = "color-box";
+          colorDot.style.backgroundColor = color;
+          const label = document.createElement("span");
+          label.className = "label";
+          label.textContent = flyer.nombre || "Sin nombre";
+          const altPrec = document.createElement("span");
+          altPrec.className = "alt-prec";
+          altPrec.textContent = `Alt: ${flyer.alt || '-'}m, Prec: ${accuracy}m`;
+
+          div.appendChild(colorDot);
+          div.appendChild(label);
+          div.appendChild(altPrec);
+          document.getElementById("flyers").appendChild(div);
+        });
+
+        // Mostrar próximos vuelos
+        const ul = document.getElementById("next-flights");
+        ul.innerHTML = "";
+        (data.cola || []).forEach((nombre) => {
+          const li = document.createElement("li");
+          li.textContent = nombre;
+          ul.appendChild(li);
+        });
+
+      } catch (err) {
+        console.error("Error cargando datos:", err);
+      }
+    }
+
+    fetchData();
+    setInterval(fetchData, 5000);
   </script>
 </body>
 </html>
