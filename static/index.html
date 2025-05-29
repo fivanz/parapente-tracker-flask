@@ -5,12 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Parapente Tracker</title>
 
-  <!-- Bootstrap 5 CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
@@ -20,56 +14,72 @@
   />
 
   <style>
+    /* Reset y básicos */
     html, body {
       height: 100%;
       margin: 0;
-      background: #f9f9f9;
+      padding: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f7f7;
       color: #222;
     }
-    body, #map {
+
+    body {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Contenedor mapa */
+    #map {
+      flex: 1 1 50%;
+      min-width: 300px;
       height: 100vh;
     }
-    #map {
-      width: 100%;
-      min-height: 600px;
-    }
+
+    /* Panel lateral */
     #panel {
+      flex: 1 1 50%;
       height: 100vh;
       overflow-y: auto;
-      padding: 1.5rem 1.5rem 1.5rem 1.5rem;
       background: #fff;
-      font-size: 1.2rem;
-      box-shadow: -3px 0 5px rgba(0,0,0,0.1);
+      padding: 20px 25px;
+      box-sizing: border-box;
+      box-shadow: -3px 0 8px rgba(0, 0, 0, 0.1);
       user-select: none;
     }
+
+    /* Elementos de cada parapentista */
     .marker-info {
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 10px 0;
+      padding: 12px 0;
       border-bottom: 1px solid #ddd;
     }
     .marker-color {
-      font-size: 1.8rem;
+      font-size: 1.7rem;
       font-weight: bold;
       user-select: none;
-      min-width: 25px;
+      min-width: 24px;
       line-height: 1;
       color: black;
     }
     .marker-text {
       flex-grow: 1;
-      line-height: 1.2;
+      line-height: 1.3;
       white-space: pre-line;
       color: #333;
+      font-size: 1.1rem;
     }
-    /* Scrollbar para panel */
+
+    /* Scrollbar styling */
     #panel::-webkit-scrollbar {
       width: 12px;
     }
     #panel::-webkit-scrollbar-track {
-      background: #f1f1f1;
+      background: #f0f0f0;
     }
     #panel::-webkit-scrollbar-thumb {
       background: #888;
@@ -81,15 +91,11 @@
   </style>
 </head>
 <body>
-  <div class="container-fluid h-100">
-    <div class="row h-100 gx-0">
-      <div class="col-md-6 px-1">
-        <div id="map"></div>
-      </div>
-      <div class="col-md-6 px-3" id="panel">
-        <!-- Aquí se agregarán los datos -->
-      </div>
-    </div>
+
+  <div id="map"></div>
+
+  <div id="panel">
+    <!-- Datos se insertarán aquí -->
   </div>
 
   <!-- Leaflet JS -->
@@ -98,9 +104,6 @@
     integrity="sha256-o0V8TrUL7nr1W1FiFc8u2w9z1Rg4F4V6mXvVtyZdB+o="
     crossorigin=""
   ></script>
-
-  <!-- Bootstrap Bundle JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
     // Inicializar mapa centrado en Sopó, Cundinamarca, Colombia
@@ -111,7 +114,6 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Colores para parapentistas
     const colors = [
       '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
       '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
