@@ -6,7 +6,10 @@
   <title>Parapente Tracker</title>
 
   <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
 
   <!-- Leaflet CSS -->
   <link
@@ -20,12 +23,14 @@
     html, body {
       height: 100%;
       margin: 0;
-      background-color: #f9f9f9;
-      color: #222;
+      background: #f9f9f9;
       font-family: Arial, sans-serif;
+      color: #222;
+    }
+    body, #map {
+      height: 100vh;
     }
     #map {
-      height: 100vh;
       width: 100%;
       min-height: 600px;
     }
@@ -33,29 +38,38 @@
       height: 100vh;
       overflow-y: auto;
       padding: 1rem;
-      background: #fff;
-      font-size: 1.2rem;
+      background: white;
+      font-size: 1.15rem;
+    }
+    #panel-columns {
+      display: flex;
+      gap: 1rem;
+      height: 100%;
+    }
+    .panel-col {
+      flex: 1;
+      overflow-y: auto;
     }
     .marker-info {
       border-bottom: 1px solid #ddd;
-      padding-bottom: 0.8rem;
-      margin-bottom: 0.8rem;
+      padding: 0.5rem 0;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
       user-select: none;
     }
     .marker-color {
       font-size: 1.6rem;
       font-weight: bold;
       user-select: none;
+      min-width: 1.5rem;
+      text-align: center;
     }
-    /* Para que el texto no se corte */
     .marker-text {
       flex-grow: 1;
       word-break: break-word;
     }
-    /* Scrollbar un poco personalizado */
+    /* Scrollbar para panel */
     #panel::-webkit-scrollbar {
       width: 10px;
     }
@@ -74,11 +88,14 @@
 <body>
   <div class="container-fluid h-100">
     <div class="row h-100 gx-0">
-      <div class="col-md-6">
+      <div class="col-md-6 px-1">
         <div id="map"></div>
       </div>
-      <div class="col-md-6" id="panel">
-        <!-- Info dinámica -->
+      <div class="col-md-6 px-3" id="panel">
+        <div id="panel-columns">
+          <div class="panel-col" id="panel-col-1"></div>
+          <div class="panel-col" id="panel-col-2"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -90,10 +107,11 @@
     crossorigin=""
   ></script>
 
-  <!-- Bootstrap Bundle JS (Popper + Bootstrap) -->
+  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // Inicializar mapa centrado en Sopó, Cundinamarca, Colombia
     const map = L.map('map').setView([4.905, -73.941], 14);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -116,12 +134,16 @@
         const res = await fetch('/data');
         const data = await res.json();
 
-        const panel = document.getElementById('panel');
-        panel.innerHTML = '';
+        const col1 = document.getElementById('panel-col-1');
+        const col2 = document.getElementById('panel-col-2');
+        col1.innerHTML = '';
+        col2.innerHTML = '';
 
-        Object.entries(data.parapentistas).forEach(([id, p], index) => {
-          const color = colors[index % colors.length];
+        let idx = 0;
+        Object.entries(data.parapentistas).forEach(([id, p]) => {
+          const color = colors[idx % colors.length];
 
+          // Actualizar o crear marcador
           if (markers[id]) {
             markers[id].setLatLng([p.lat, p.lng]);
             markers[id].setIcon(createColoredIcon(color));
@@ -129,6 +151,7 @@
             markers[id] = L.marker([p.lat, p.lng], { icon: createColoredIcon(color) }).addTo(map);
           }
 
+          // Círculo de precisión
           if (circles[id]) {
             circles[id].setLatLng([p.lat, p.lng]);
             circles[id].setRadius(p.accuracy || 0);
@@ -148,10 +171,9 @@
           const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
           const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
 
-          // Contenedor del panel info
+          // Crear el div info
           const div = document.createElement('div');
           div.className = 'marker-info';
-
           div.innerHTML = `
             <span class="marker-color" style="color:${color}">●</span>
             <div class="marker-text">
@@ -161,7 +183,14 @@
             </div>
           `;
 
-          panel.appendChild(div);
+          // Distribuir en dos columnas alternadas
+          if (idx % 2 === 0) {
+            col1.appendChild(div);
+          } else {
+            col2.appendChild(div);
+          }
+
+          idx++;
         });
       } catch (error) {
         console.error('Error al obtener datos:', error);
@@ -186,7 +215,7 @@
       fetchData();
       setTimeout(() => {
         map.invalidateSize();
-      }, 200);
+      }, 300);
     };
   </script>
 </body>
