@@ -1,65 +1,67 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <title>Parapente Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parapentes en Vuelo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-sA+4yP1LUZf98dPjUHdQeZgsyWmvxvP0qS2gO0m03h0="
+    crossorigin=""
+  />
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       font-family: sans-serif;
-      background: #f2f2f2;
+      background: #eef2f3;
+      overflow: hidden;
     }
 
     #main {
       display: flex;
-      height: 100vh;
-      overflow: hidden;
+      height: 100%;
     }
 
     #map {
-      width: 45%;
+      flex: 1 1 50%;
       height: 100%;
     }
 
     #sidebar {
-      width: 55%;
-      padding: 1rem;
-      box-sizing: border-box;
-      overflow-y: auto;
+      flex: 1 1 50%;
+      padding: 10px 20px;
+      overflow: hidden;
       background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
 
-    #info {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .parapente {
-      padding: 0.5rem;
-      border-left: 10px solid gray;
-      background: #f9f9f9;
-      border-radius: 8px;
-    }
-
-    .cola {
-      margin-top: 2rem;
-      background: #eaeaea;
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
-    .cola h3 {
+    h2 {
       margin-top: 0;
+      font-size: 20px;
     }
 
-    .prec {
-      font-size: 0.9em;
-      color: #555;
+    #info-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .info-box {
+      flex: 1 1 calc(50% - 10px);
+      background: #f5f5f5;
+      border-left: 6px solid #999;
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    ul {
+      padding-left: 20px;
     }
   </style>
 </head>
@@ -67,98 +69,112 @@
   <div id="main">
     <div id="map"></div>
     <div id="sidebar">
-      <h2>Parapentes en vuelo</h2>
-      <div id="info"></div>
-      <div class="cola">
-        <h3>Próximos vuelos</h3>
-        <ul id="cola-list"></ul>
-      </div>
+      <h2>Parapentistas en vuelo</h2>
+      <div id="info-container"></div>
+      <h2 style="margin-top: 20px;">Próximos vuelos</h2>
+      <ul id="cola"></ul>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-nPLb6G6RyXvToUyhmlsmPazTApZ48Jpihz8gkG0YjZE="
+    crossorigin=""
+  ></script>
   <script>
-    const map = L.map('map').setView([4.909, -73.949], 13); // Sopó, Colombia
+    const map = L.map("map").setView([4.905, -73.941], 14); // Sopó, Cundinamarca
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
     }).addTo(map);
 
     const colors = {};
     const markers = {};
     const circles = {};
-    const colorList = [
-      'red', 'blue', 'green', 'orange', 'purple', 'brown', 'magenta', 'teal',
-      'gold', 'black', 'gray', 'darkred', 'navy', 'coral', 'lime'
-    ];
 
     function getColor(id) {
       if (!colors[id]) {
-        colors[id] = colorList[Object.keys(colors).length % colorList.length];
+        const hue = Object.keys(colors).length * 47 % 360;
+        colors[id] = `hsl(${hue}, 90%, 50%)`;
       }
       return colors[id];
     }
 
-    function updateData() {
-      fetch('/data')
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('info').innerHTML = '';
-          const parapentistas = data.parapentistas || {};
+    async function loadData() {
+      try {
+        const res = await fetch("/data");
+        const json = await res.json();
+        const parapentistas = json.parapentistas || {};
+        const cola = json.cola || [];
 
-          for (const id in parapentistas) {
-            const p = parapentistas[id];
-            const color = getColor(id);
+        // Actualiza puntos en el mapa
+        for (const id in parapentistas) {
+          const p = parapentistas[id];
+          const latlng = [p.lat, p.lng];
+          const color = getColor(id);
 
-            // Info panel derecho
-            const div = document.createElement('div');
-            div.className = 'parapente';
-            div.style.borderLeftColor = color;
-            div.innerHTML = `
-              <strong>${p.nombre || 'Sin nombre'}</strong><br>
-              ID: ${id}<br>
-              Altitud: ${p.alt || 'N/A'} m<br>
-              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span>
-            `;
-            document.getElementById('info').appendChild(div);
-
-            // Mapa: marcador
-            const latLng = [p.lat, p.lng];
-            if (markers[id]) {
-              markers[id].setLatLng(latLng);
-              circles[id].setLatLng(latLng);
-              circles[id].setRadius(p.accuracy || 20);
-            } else {
-              markers[id] = L.circleMarker(latLng, {
-                radius: 8,
-                color,
-                fillColor: color,
-                fillOpacity: 0.9
-              }).addTo(map);
-
-              circles[id] = L.circle(latLng, {
-                radius: p.accuracy || 20,
-                color,
-                fillColor: color,
-                fillOpacity: 0.2,
-                weight: 1
-              }).addTo(map);
-            }
+          // Marker
+          if (markers[id]) {
+            markers[id].setLatLng(latlng);
+          } else {
+            markers[id] = L.circleMarker(latlng, {
+              radius: 8,
+              fillColor: color,
+              color: "#000",
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.9,
+            }).addTo(map);
           }
 
-          // Actualizar cola
-          const colaList = document.getElementById('cola-list');
-          colaList.innerHTML = '';
-          (data.cola || []).forEach(nombre => {
-            const li = document.createElement('li');
-            li.textContent = nombre;
-            colaList.appendChild(li);
-          });
-        });
+          // Accuracy circle
+          const acc = p.accuracy || 0;
+          if (circles[id]) {
+            circles[id].setLatLng(latlng).setRadius(acc);
+          } else {
+            circles[id] = L.circle(latlng, {
+              radius: acc,
+              color: color,
+              fillOpacity: 0.05,
+              weight: 1,
+            }).addTo(map);
+          }
+        }
+
+        // Info panel
+        const infoContainer = document.getElementById("info-container");
+        infoContainer.innerHTML = "";
+
+        for (const id in parapentistas) {
+          const p = parapentistas[id];
+          const color = getColor(id);
+
+          const div = document.createElement("div");
+          div.className = "info-box";
+          div.style.borderLeftColor = color;
+          div.innerHTML = `
+            <strong>${p.nombre || "Sin nombre"}</strong><br>
+            Alt: ${p.alt ?? "–"} m<br>
+            Precisión: ${p.accuracy ?? "–"} m
+          `;
+          infoContainer.appendChild(div);
+        }
+
+        // Cola de próximos vuelos
+        const ul = document.getElementById("cola");
+        ul.innerHTML = "";
+        for (const nombre of cola) {
+          const li = document.createElement("li");
+          li.textContent = nombre;
+          ul.appendChild(li);
+        }
+      } catch (e) {
+        console.error("Error cargando datos", e);
+      }
     }
 
-    setInterval(updateData, 5000);
-    updateData();
+    loadData();
+    setInterval(loadData, 5000);
   </script>
 </body>
 </html>
