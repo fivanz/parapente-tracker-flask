@@ -24,7 +24,7 @@
       height: 100%;
       margin: 0;
       background: #f9f9f9;
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       color: #222;
     }
     body, #map {
@@ -37,48 +37,43 @@
     #panel {
       height: 100vh;
       overflow-y: auto;
-      padding: 1rem;
-      background: white;
-      font-size: 1.15rem;
-    }
-    #panel-columns {
-      display: flex;
-      gap: 1rem;
-      height: 100%;
-    }
-    .panel-col {
-      flex: 1;
-      overflow-y: auto;
+      padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+      background: #fff;
+      font-size: 1.2rem;
+      box-shadow: -3px 0 5px rgba(0,0,0,0.1);
+      user-select: none;
     }
     .marker-info {
-      border-bottom: 1px solid #ddd;
-      padding: 0.5rem 0;
       display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      user-select: none;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
     }
     .marker-color {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       font-weight: bold;
       user-select: none;
-      min-width: 1.5rem;
-      text-align: center;
+      min-width: 25px;
+      line-height: 1;
+      color: black;
     }
     .marker-text {
       flex-grow: 1;
-      word-break: break-word;
+      line-height: 1.2;
+      white-space: pre-line;
+      color: #333;
     }
     /* Scrollbar para panel */
     #panel::-webkit-scrollbar {
-      width: 10px;
+      width: 12px;
     }
     #panel::-webkit-scrollbar-track {
       background: #f1f1f1;
     }
     #panel::-webkit-scrollbar-thumb {
       background: #888;
-      border-radius: 5px;
+      border-radius: 6px;
     }
     #panel::-webkit-scrollbar-thumb:hover {
       background: #555;
@@ -92,10 +87,7 @@
         <div id="map"></div>
       </div>
       <div class="col-md-6 px-3" id="panel">
-        <div id="panel-columns">
-          <div class="panel-col" id="panel-col-1"></div>
-          <div class="panel-col" id="panel-col-2"></div>
-        </div>
+        <!-- Aquí se agregarán los datos -->
       </div>
     </div>
   </div>
@@ -119,6 +111,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
+    // Colores para parapentistas
     const colors = [
       '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
       '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
@@ -134,13 +127,11 @@
         const res = await fetch('/data');
         const data = await res.json();
 
-        const col1 = document.getElementById('panel-col-1');
-        const col2 = document.getElementById('panel-col-2');
-        col1.innerHTML = '';
-        col2.innerHTML = '';
+        const panel = document.getElementById('panel');
+        panel.innerHTML = '';
 
         let idx = 0;
-        Object.entries(data.parapentistas).forEach(([id, p]) => {
+        for (const [id, p] of Object.entries(data.parapentistas)) {
           const color = colors[idx % colors.length];
 
           // Actualizar o crear marcador
@@ -171,7 +162,7 @@
           const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
           const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
 
-          // Crear el div info
+          // Crear info en panel derecho
           const div = document.createElement('div');
           div.className = 'marker-info';
           div.innerHTML = `
@@ -182,16 +173,10 @@
               Precisión: ${prec}
             </div>
           `;
-
-          // Distribuir en dos columnas alternadas
-          if (idx % 2 === 0) {
-            col1.appendChild(div);
-          } else {
-            col2.appendChild(div);
-          }
+          panel.appendChild(div);
 
           idx++;
-        });
+        }
       } catch (error) {
         console.error('Error al obtener datos:', error);
       }
