@@ -22,16 +22,17 @@
 
     #main {
       display: flex;
-      height: 100%;
+      height: 100vh;
+      width: 100vw;
     }
 
     #map {
-      flex: 1 1 50%;
-      height: 100%;
+      width: 50%;
+      height: 100vh;
     }
 
     #sidebar {
-      flex: 1 1 50%;
+      width: 50%;
       padding: 10px 20px;
       overflow: hidden;
       background: #ffffff;
@@ -82,12 +83,7 @@
     crossorigin=""
   ></script>
   <script>
-    const map = L.map("map").setView([4.905, -73.941], 14); // Sopó, Cundinamarca
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
-
+    let map;
     const colors = {};
     const markers = {};
     const circles = {};
@@ -100,6 +96,16 @@
       return colors[id];
     }
 
+    function initMap() {
+      map = L.map("map").setView([4.905, -73.941], 14); // Sopó
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      setTimeout(() => map.invalidateSize(), 200);
+    }
+
     async function loadData() {
       try {
         const res = await fetch("/data");
@@ -107,7 +113,6 @@
         const parapentistas = json.parapentistas || {};
         const cola = json.cola || [];
 
-        // Actualiza puntos en el mapa
         for (const id in parapentistas) {
           const p = parapentistas[id];
           const latlng = [p.lat, p.lng];
@@ -127,7 +132,7 @@
             }).addTo(map);
           }
 
-          // Accuracy circle
+          // Circle for accuracy
           const acc = p.accuracy || 0;
           if (circles[id]) {
             circles[id].setLatLng(latlng).setRadius(acc);
@@ -160,7 +165,6 @@
           infoContainer.appendChild(div);
         }
 
-        // Cola de próximos vuelos
         const ul = document.getElementById("cola");
         ul.innerHTML = "";
         for (const nombre of cola) {
@@ -173,8 +177,11 @@
       }
     }
 
-    loadData();
-    setInterval(loadData, 5000);
+    window.onload = () => {
+      initMap();
+      loadData();
+      setInterval(loadData, 5000);
+    };
   </script>
 </body>
 </html>
