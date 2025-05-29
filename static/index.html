@@ -100,9 +100,12 @@
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
 
+    // Colores para cada parapentista
     const colors = [
       "red", "blue", "green", "orange", "purple", "darkred", "cadetblue", "black"
     ];
+
+    // Mantenemos el color asignado a cada ID mientras dura la sesión
     const idToColor = {};
     const markers = {};
 
@@ -113,7 +116,7 @@
 
         const { parapentistas, cola } = await res.json();
 
-        // Quitar marcadores sin datos actuales
+        // Limpiar marcadores sin datos actuales
         Object.keys(markers).forEach(id => {
           if (!parapentistas[id]) {
             map.removeLayer(markers[id]);
@@ -126,10 +129,23 @@
         const listadoDiv = document.getElementById("listado");
         listadoDiv.innerHTML = "";
 
+        // Para mantener colorIndex consistente si llegan nuevos IDs
+        const usedColors = new Set(Object.values(idToColor));
+        function getNextColor() {
+          for (let i = 0; i < colors.length; i++) {
+            if (!usedColors.has(colors[i])) {
+              usedColors.add(colors[i]);
+              return colors[i];
+            }
+          }
+          // Si se usan todos, reinicia colores (puede repetirse)
+          return colors[colorIndex++ % colors.length];
+        }
+
         for (const [id, p] of Object.entries(parapentistas)) {
+          // Asignar color único si no tiene
           if (!idToColor[id]) {
-            idToColor[id] = colors[colorIndex % colors.length];
-            colorIndex++;
+            idToColor[id] = getNextColor();
           }
           const color = idToColor[id];
 
@@ -163,7 +179,7 @@
           listadoDiv.appendChild(div);
         }
 
-        // Lista próximos vuelos (puede estar vacía)
+        // Mostrar próximos vuelos en lista
         const listaCola = document.getElementById("lista-cola");
         listaCola.innerHTML = "";
         if (cola && Array.isArray(cola)) {
