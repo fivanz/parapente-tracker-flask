@@ -110,9 +110,9 @@
             div.className = 'parapente';
             div.style.borderLeftColor = color;
             div.innerHTML = `
-              ID: ${id} - <strong>${p.nombre || 'Sin nombre'}</strong><br>
-              Altitud: ${p.alt || 'N/A'} m -
-              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span>
+              ID: ${id}: <strong>${p.nombre || 'Sin nombre'}</strong> (
+              Altitud: ${p.alt || 'N/A'} m. -
+              <span class="prec">Precisión: ${p.accuracy || 'N/A'} m</span> )
             `;
             document.getElementById('info').appendChild(div);
 
