@@ -1,71 +1,85 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import json
+import os
 from datetime import datetime
-import threading
+from waitress import serve
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+CORS(app)
 
-# Almacenamiento en memoria
-parapentistas = {}
-cola_vuelos = []
+STORE_PATH = 'data/store.json'
 
-@app.route("/")
-def dashboard():
-    return render_template("index.html")
+# Inicializar almacenamiento
+def init_store():
+    if not os.path.exists('data'):
+        os.makedirs('data')
+    if not os.path.isfile(STORE_PATH):
+        with open(STORE_PATH, 'w') as f:
+            json.dump({"parapentistas": {}, "cola": []}, f)
 
-@app.route("/webhook/location", methods=["POST"])
-def recibir_datos():
-    data = request.get_json()
-    if not data or "id" not in data or "lat" not in data or "lng" not in data:
-        return "Faltan datos obligatorios", 400
+# Cargar datos
+def load_data():
+    with open(STORE_PATH, 'r') as f:
+        return json.load(f)
 
-    id_ = str(data["id"])
-    parapentistas[id_] = {
-        "lat": data["lat"],
-        "lng": data["lng"],
-        "alt": data.get("alt"),
-        "accuracy": data.get("accuracy"),
-        "nombre": data.get("nombre", "Sin nombre"),
-        "timestamp": datetime.now().isoformat()
-    }
+# Guardar datos
+def save_data(data):
+    with open(STORE_PATH, 'w') as f:
+        json.dump(data, f)
 
-    return "OK", 200
+@app.route('/')
+def index():
+    return send_from_directory('static', 'index.html')
 
-@app.route("/webhook/cola", methods=["POST"])
-def agregar_a_cola():
-    data = request.get_json()
-    nombre = data.get("nombre")
-    if not nombre:
-        return "Nombre requerido", 400
-    cola_vuelos.append(nombre)
-    if len(cola_vuelos) > 20:
-        cola_vuelos.pop(0)
-    return "Agregado", 200
-
-@app.route("/data")
-def data():
+@app.route('/data', methods=['GET'])
+def get_data():
+    data = load_data()
     return jsonify({
-        "parapentistas": parapentistas,
-        "cola": cola_vuelos
+        "parapentistas": data.get("parapentistas", {}),
+        "cola": data.get("cola", [])
     })
 
-@app.route("/static/<path:filename>")
-def static_files(filename):
-    return send_from_directory("static", filename)
+@app.route('/webhook/location', methods=['POST'])
+def update_location():
+    payload = request.json
+    pid = payload.get("id")
 
-def limpiar_parapentistas():
-    while True:
-        import time
-        time.sleep(60)
-        ahora = datetime.now()
-        expirados = [
-            id_ for id_, p in parapentistas.items()
-            if (ahora - datetime.fromisoformat(p["timestamp"])).total_seconds() > 180
-        ]
-        for id_ in expirados:
-            del parapentistas[id_]
+    if not pid:
+        return {"error": "ID requerido"}, 400
 
-# Hilo para limpieza automática (opcional)
-threading.Thread(target=limpiar_parapentistas, daemon=True).start()
+    data = load_data()
+    data["parapentistas"].setdefault(pid, {})
+    data["parapentistas"][pid].update({
+        "lat": payload.get("lat"),
+        "lng": payload.get("lng"),
+        "alt": payload.get("alt"),
+        "accuracy": payload.get("accuracy"),
+        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    })
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    save_data(data)
+    return {"status": "ok"}
+
+@app.route('/webhook/nombre', methods=['POST'])
+def update_nombre():
+    payload = request.json
+    pid = payload.get("id")
+    nombre = payload.get("nombre")
+    cola = payload.get("siguientes", [])
+
+    data = load_data()
+
+    if pid and nombre:
+        data["parapentistas"].setdefault(pid, {})
+        data["parapentistas"][pid]["nombre"] = nombre
+
+    if cola:
+        data["cola"] = cola
+
+    save_data(data)
+    return {"status": "ok"}
+
+if __name__ == '__main__':
+    init_store()
+    serve(app, host='0.0.0.0', port=8000)
