@@ -14,31 +14,24 @@
   />
 
   <style>
-    /* Reset y básicos */
     html, body {
       height: 100%;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f7f7f7;
       color: #222;
     }
-
     body {
       display: flex;
       flex-direction: row;
       height: 100vh;
       overflow: hidden;
     }
-
-    /* Contenedor mapa */
     #map {
       flex: 1 1 50%;
       min-width: 300px;
       height: 100vh;
     }
-
-    /* Panel lateral */
     #panel {
       flex: 1 1 50%;
       height: 100vh;
@@ -46,11 +39,9 @@
       background: #fff;
       padding: 20px 25px;
       box-sizing: border-box;
-      box-shadow: -3px 0 8px rgba(0, 0, 0, 0.1);
+      box-shadow: -3px 0 8px rgba(0,0,0,0.1);
       user-select: none;
     }
-
-    /* Elementos de cada parapentista */
     .marker-info {
       display: flex;
       align-items: flex-start;
@@ -73,8 +64,6 @@
       color: #333;
       font-size: 1.1rem;
     }
-
-    /* Scrollbar styling */
     #panel::-webkit-scrollbar {
       width: 12px;
     }
@@ -93,10 +82,7 @@
 <body>
 
   <div id="map"></div>
-
-  <div id="panel">
-    <!-- Datos se insertarán aquí -->
-  </div>
+  <div id="panel"></div>
 
   <!-- Leaflet JS -->
   <script
@@ -106,7 +92,6 @@
   ></script>
 
   <script>
-    // Inicializar mapa centrado en Sopó, Cundinamarca, Colombia
     const map = L.map('map').setView([4.905, -73.941], 14);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -136,7 +121,6 @@
         for (const [id, p] of Object.entries(data.parapentistas)) {
           const color = colors[idx % colors.length];
 
-          // Actualizar o crear marcador
           if (markers[id]) {
             markers[id].setLatLng([p.lat, p.lng]);
             markers[id].setIcon(createColoredIcon(color));
@@ -144,7 +128,6 @@
             markers[id] = L.marker([p.lat, p.lng], { icon: createColoredIcon(color) }).addTo(map);
           }
 
-          // Círculo de precisión
           if (circles[id]) {
             circles[id].setLatLng([p.lat, p.lng]);
             circles[id].setRadius(p.accuracy || 0);
@@ -164,7 +147,6 @@
           const alt = p.alt !== undefined ? p.alt + ' m' : 'Sin altitud';
           const prec = p.accuracy !== undefined ? p.accuracy + ' m' : 'Sin precisión';
 
-          // Crear info en panel derecho
           const div = document.createElement('div');
           div.className = 'marker-info';
           div.innerHTML = `
