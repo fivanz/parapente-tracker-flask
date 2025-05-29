@@ -51,79 +51,79 @@
     <div id="map"></div>
     <div class="sidebar" id="infoPanel">
       <h2>Parapentistas en vuelo</h2>
-      <div id="parapentistas"></div>
-      <div class="cola">
-        <h3>Siguientes vuelos</h3>
-        <ul id="cola"></ul>
-      </div>
     </div>
   </div>
-
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([4.9097, -73.9389], 13); // Sopó, Cundinamarca
+    const map = L.map('map').setView([4.907, -73.938], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    const colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'black', 'cadetblue', 'darkgreen', 'darkred'];
+    const colors = ["red", "blue", "green", "orange", "purple", "brown", "black", "yellow", "cyan", "magenta"];
     const markers = {};
+    const lastSeen = {};
 
-    function update() {
+    function updateMap() {
       fetch('/data')
         .then(res => res.json())
         .then(data => {
-          const panel = document.getElementById('parapentistas');
-          panel.innerHTML = '';
+          const now = Date.now();
+          const panel = document.getElementById('infoPanel');
+          panel.innerHTML = '<h2>Parapentistas en vuelo</h2>';
 
-          let index = 0;
-          for (const [id, info] of Object.entries(data.parapentistas)) {
-            const color = colors[index % colors.length];
+          for (const [index, d] of Object.entries(data)) {
+            const id = d.id;
+            const lat = d.lat;
+            const lon = d.lon;
+            const name = d.name || "Sin nombre";
+            const alt = d.alt || "";
+            const acc = d.acc || "";
 
-            // Actualizar marcador
-            const latlng = [info.lat, info.lng];
+            // Asignar color por ID fijo
+            const color = colors[parseInt(id, 10) % colors.length];
+            const icon = L.circleMarker([lat, lon], {
+              radius: 10,
+              fillColor: color,
+              color: color,
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.8
+            });
+
             if (markers[id]) {
-              markers[id].setLatLng(latlng);
-            } else {
-              markers[id] = L.circleMarker(latlng, {
-                radius: 10,
-                fillColor: color,
-                fillOpacity: 0.9,
-                color: '#000',
-                weight: 1
-              }).addTo(map);
+              map.removeLayer(markers[id]);
             }
+            icon.addTo(map);
+            markers[id] = icon;
+            lastSeen[id] = now;
 
-            const nombre = info.nombre || "Sin nombre";
-            const alt = info.alt ? `${info.alt} m` : "Altitud desconocida";
-            const acc = info.accuracy ? `${info.accuracy} m` : "Precisión desconocida";
-
-            const div = document.createElement('div');
-            div.className = 'parapentista';
-            div.style.borderColor = color;
-            div.innerHTML = `
-              <strong>#${index + 1} - ${nombre}</strong>
-              Altitud: ${alt}<br>
-              Precisión: ${acc}
+            panel.innerHTML += `
+              <div class="parapentista" style="border-left-color: ${color}">
+                <strong>${name}</strong>
+                <span>ID: ${id}</span><br>
+                <span>Altitud: ${alt}</span><br>
+                <span>Precisión: ${acc}</span>
+              </div>
             `;
-            panel.appendChild(div);
-            index++;
           }
 
-          // Actualizar la cola
-          const cola = document.getElementById('cola');
-          cola.innerHTML = '';
-          (data.cola || []).forEach(nombre => {
-            const li = document.createElement('li');
-            li.textContent = nombre;
-            cola.appendChild(li);
-          });
+          // Eliminar marcadores viejos
+          for (const id in lastSeen) {
+            if (now - lastSeen[id] > 5 * 60 * 1000) { // 5 minutos
+              if (markers[id]) {
+                map.removeLayer(markers[id]);
+                delete markers[id];
+              }
+              delete lastSeen[id];
+            }
+          }
         });
     }
 
-    setInterval(update, 3000);
-    update();
+    setInterval(updateMap, 5000);
+    updateMap();
   </script>
 </body>
 </html>
