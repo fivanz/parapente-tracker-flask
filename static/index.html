@@ -214,10 +214,12 @@
             div.style.borderLeftColor = color;
             div.innerHTML = `
               <div class="nombre"><img src="static/icons/user.png" alt="">${p.nombre || 'Sin nombre'}</div>
-              <div class="dato"><img src="static/icons/id.png" alt="">${id} - <img src="static/icons/clock.png" alt="">${fechaHora}</div>
+              <div class="dato"><img src="static/icons/id.png" alt="">${id} &nbsp;&nbsp; 
+                <img src="static/icons/clock.png" alt="">${fechaHora}
+              </div>
               <div class="dato">
-                <img src="static/icons/altitude.png" alt="">${p.alt || '?'} m &nbsp;&nbsp;
-                <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'} m
+                <img src="static/icons/altitude.png" alt="">${p.alt || '?'}m &nbsp;&nbsp;
+                <img src="static/icons/accuracy.png" alt="">${p.accuracy || '?'}m
               </div>
             `;
             sidebar.appendChild(div);
