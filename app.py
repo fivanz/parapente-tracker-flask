@@ -55,7 +55,7 @@ def update_location():
         "lng": payload.get("lng"),
         "alt": payload.get("alt"),
         "accuracy": payload.get("accuracy"),
-        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        "timestamp": datetime.utcnow().isoformat()
     })
 
     save_data(data)
