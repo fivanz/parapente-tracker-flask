@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo  # ✅ Importado para la zona horaria de Colombia
 from waitress import serve
 
 app = Flask(__name__, static_folder='static')
@@ -55,7 +56,7 @@ def update_location():
         "lng": payload.get("lng"),
         "alt": payload.get("alt"),
         "accuracy": payload.get("accuracy"),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(ZoneInfo("America/Bogota")).isoformat()  # ✅ Zona horaria Colombia
     })
 
     save_data(data)
