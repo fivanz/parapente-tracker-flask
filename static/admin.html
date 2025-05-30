@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administrar Parapentistas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f2f2f2;
+      color: #333;
+    }
+
+    h1 {
+      color: #2c3e50;
+    }
+
+    h2 {
+      color: #34495e;
+      margin-top: 40px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 20px;
+      display: block;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    textarea {
+      resize: vertical;
+      height: 100px;
+    }
+
+    button {
+      background-color: #27ae60;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #219150;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .form-container {
+      margin-bottom: 40px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Administración de Parapentistas</h1>
+
+  <div class="form-container">
+    <h2>Asociar ID con Nombre</h2>
+    <form id="form-nombre">
+      <label for="id">ID del dispositivo GPS:</label>
+      <input type="text" id="id" name="id" required />
+
+      <label for="nombre">Nombre del parapentista:</label>
+      <input type="text" id="nombre" name="nombre" required />
+
+      <button type="submit">Enviar Nombre</button>
+    </form>
+    <div id="status-nombre" class="status"></div>
+  </div>
+
+  <div class="form-container">
+    <h2>Actualizar Lista de Próximos Vuelos</h2>
+    <form id="form-cola">
+      <label for="cola">Próximos vuelos (máx. 10 nombres, uno por línea):</label>
+      <textarea id="cola" name="cola" placeholder="Ejemplo:
+Lucía Gómez
+Mateo Torres
+..."></textarea>
+
+      <button type="submit">Enviar Cola</button>
+    </form>
+    <div id="status-cola" class="status"></div>
+  </div>
+
+  <script>
+    // Formulario para nombre
+    document.getElementById('form-nombre').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const id = document.getElementById('id').value.trim();
+      const nombre = document.getElementById('nombre').value.trim();
+      const status = document.getElementById('status-nombre');
+      status.textContent = '';
+      status.className = 'status';
+
+      if (!id || !nombre) {
+        status.textContent = 'ID y nombre son obligatorios.';
+        status.classList.add('error');
+        return;
+      }
+
+      const payload = { id, nombre };
+
+      try {
+        const response = await fetch('/webhook/nombre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          status.textContent = 'Nombre enviado correctamente.';
+          status.classList.add('success');
+        } else {
+          status.textContent = 'Error: ' + (result.error || 'No se pudo enviar.');
+          status.classList.add('error');
+        }
+      } catch (err) {
+        status.textContent = 'Error de red o servidor.';
+        status.classList.add('error');
+      }
+    });
+
+    // Formulario para cola
+    document.getElementById('form-cola').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const colaInput = document.getElementById('cola').value.trim();
+      const status = document.getElementById('status-cola');
+      status.textContent = '';
+      status.className = 'status';
+
+      const siguientes = colaInput
+        .split('\n')
+        .map(line => line.trim())
+        .filter(name => name.length > 0)
+        .slice(0, 10);
+
+      const payload = { siguientes };
+
+      try {
+        const response = await fetch('/webhook/nombre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          status.textContent = 'Cola actualizada correctamente.';
+          status.classList.add('success');
+        } else {
+          status.textContent = 'Error: ' + (result.error || 'No se pudo enviar.');
+          status.classList.add('error');
+        }
+      } catch (err) {
+        status.textContent = 'Error de red o servidor.';
+        status.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>
